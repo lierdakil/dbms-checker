@@ -17,48 +17,76 @@ import qualified Data.Text as T
 import Servant.Auth.Server
 import DBTypes
 import API.Types
+import API.Instances ()
 import GHC.Types (Symbol)
 import Servant.Swagger.UI
 
 type BasicAPI =
        "auth" :> ReqBody '[JSON] AuthData :> Post '[JSON] UserSessionData
-  :<|> "topics" :> Get '[JSON] [PredefinedTopic]
-  :<|> "topic" :> (
-             Capture "userId" UserIdentifier :> (
-                    Get '[JSON] AssignedTopicInfo
-               :<|> ReqBody '[JSON] AssignedTopic :> Post '[JSON] ()
-               )
-        :<|> Capture "topicId" CustomTopicIdentifier
-             :> ReqBody '[JSON] AcceptanceState :> Patch '[JSON] ()
+  :<|> "predefined-topics" :> Get '[JSON] [PredefinedTopic]
+  :<|> "custom-topics" :> (
+             Post '[JSON] Text
+        :<|> Capture "topicId" CustomTopicIdentifier :> (
+                  ReqBody '[JSON] Text :> Put '[JSON] ()
+             :<|> ReqBody '[JSON] AcceptanceState :> Patch '[JSON] ()
+             )
         )
-  :<|> "erd" :> (
-          BasicCrud "erdId" ERDIdentifier 'True
-     :<|> "render" :> Capture "erdId" ERDIdentifier :> Get '[OctetStream] FileData
-     )
-  :<|> "fundep" :> (
-          BasicCrud "fundepId" FunDepIdentifier 'False
-     :<|> "render" :> Capture "fundepId" FunDepIdentifier :> Get '[OctetStream] FileData
-     )
-  :<|> "relschema" :> BasicCrud "relschemaId" RelSchemaIdentifier 'False
-  :<|> "sqlschema" :> BasicCrud "sqlschemaId" PhysSchemaIdentifier 'True
+  :<|> "users" :> (
+             Capture "userId" UserIdentifier :> (
+                  "topic" :> (
+                         Get '[JSON] AssignedTopicInfo
+                    :<|> ReqBody '[JSON] AssignedTopic :> Put '[JSON] AssignedTopicInfo
+                    )
+             :<|> "erd" :> BasicGet ERDIdentifier
+             :<|> "fundep" :> BasicGet FunDepIdentifier
+             :<|> "relschema" :> BasicGet RelSchemaIdentifier
+             :<|> "sqlschema" :> BasicGet PhysSchemaIdentifier
+             )
+        )
+  :<|> "erd" :> BasicCrud "erdId" ERDIdentifier
+  :<|> "fundeps" :> BasicCrud "fundepId" FunDepIdentifier
+  :<|> "relschemas" :> BasicCrud "relschemaId" RelSchemaIdentifier
+  :<|> "sqlschemas" :> BasicCrud "sqlschemaId" PhysSchemaIdentifier
+  :<|> "comments" :> (
+            ReqBody '[JSON] CommentBodyInfo :> Post '[JSON] CommentInfo
+       :<|> QueryParam "parentItem" ParentItemIdentifier :> Get '[JSON] [CommentInfo]
+       :<|> Capture "commentId" CommentIdentifier :> (
+                 ReqBody '[JSON] CommentBodyInfo :> Put '[JSON] CommentInfo
+            :<|> ReqBody '[JSON] CommentStatusInfo :> Patch '[JSON] ()
+            )
+       )
 
-type Comments = "comments" :> Get '[JSON] [CommentInfo]
-  :<|> "comment" :> (
-          ReqBody '[JSON] CommentBodyInfo :> Post '[JSON] CommentInfo
-     :<|> ReqBody '[JSON] CommentStatusInfo :> Patch '[JSON] ()
-     )
+type BasicGet (idType :: *) =
+       Get '[JSON] (BasicCrudResponseBody idType)
 
-type BasicCrud (idName :: Symbol) (idType :: *) (canAccept :: Bool) =
-       Capture "userId" UserIdentifier :> Get '[JSON] (BasicCrudResponseBody idType canAccept)
-  :<|> ReqBody '[JSON] Text :> Post '[JSON] (BasicCrudResponseBody idType canAccept)
-  :<|> Capture idName idType :> BasicManip idName idType canAccept
+type BasicCrud (idName :: Symbol) (idType :: *) =
+       Get '[JSON] (BasicCrudResponseBody idType)
+  :<|> ReqBody '[JSON] Text :> Post '[JSON] (BasicCrudResponseBody idType)
+  :<|> Capture idName idType :> BasicManip idType
 
-type family BasicManip (idName :: Symbol) (idType :: *) (canAccept :: Bool) where
-  BasicManip idName idType 'False = ReqBody '[JSON] Text :> Put '[JSON] ()
-  BasicManip idName idType 'True =
-         ReqBody '[JSON] Text :> Put '[JSON] ()
-    :<|> ReqBody '[JSON] AcceptanceState :> Patch '[JSON] ()
-    :<|> Comments
+type family CanRender  (idType :: *) where
+  CanRender ERDIdentifier = 'True
+  CanRender FunDepIdentifier = 'True
+  CanRender idType = 'False
+
+type BasicManip (idType :: *) =
+    ExtendWithRender idType (
+      ExtendWithAccept idType (
+        ReqBody '[JSON] Text :> Put '[JSON] (BasicCrudResponseBody idType)
+      )
+    )
+
+type ExtendWithRender (idType :: *) (a :: *) = ExtendWithRenderInternal (CanRender idType) a
+
+type family ExtendWithRenderInternal (canRender :: Bool) (a :: *) where
+  ExtendWithRenderInternal 'True a = a :<|> "render" :> Get '[OctetStream] FileData
+  ExtendWithRenderInternal 'False a = a
+
+type ExtendWithAccept (idType :: *) (a :: *) = ExtendWithAcceptInternal (CanAccept idType) a
+
+type family ExtendWithAcceptInternal (canAccept :: Bool) (a :: *) where
+  ExtendWithAcceptInternal 'True a = a :<|> ReqBody '[JSON] AcceptanceState :> Patch '[JSON] ()
+  ExtendWithAcceptInternal 'False a = a
 
 type MainAPI = Auth '[JWT] UserSessionData :> BasicAPI
 

@@ -1,0 +1,32 @@
+{-# LANGUAGE TemplateHaskell, StandaloneDeriving #-}
+module API.TH where
+
+import Language.Haskell.TH.Syntax
+import GHC.Generics (Generic)
+import Data.Swagger (ToSchema(..), ToParamSchema(..))
+import API.JsonDeriv
+import Data.Aeson.TH
+import Servant (FromHttpApiData)
+import Control.Monad
+
+deriveToSchema :: Name -> Q [Dec]
+deriveToSchema t = let typ = return $ ConT t in do
+  d1 <- [d|deriving instance Generic $typ|]
+  d2 <- [d|instance ToSchema $typ|]
+  return $ d1 <> d2
+
+deriveToParamSchema :: Name -> Q [Dec]
+deriveToParamSchema t = let typ = return $ ConT t in [d|instance ToParamSchema $typ|]
+
+deriveFromHttpApiData :: Name -> Q [Dec]
+deriveFromHttpApiData t = let typ = return $ ConT t
+  in liftM2 (<>) [d|deriving instance FromHttpApiData $typ|] [d|deriving instance Read $typ|]
+
+deriveJSONAndSchema :: Name -> Q [Dec]
+deriveJSONAndSchema t = do
+  d1 <- deriveJSONOnly t
+  d2 <- deriveToSchema t
+  return $ d1 <> d2
+
+deriveJSONOnly :: Name -> Q [Dec]
+deriveJSONOnly = deriveJSON jsonDerivationOptions

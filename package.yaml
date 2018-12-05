@@ -25,7 +25,6 @@ dependencies:
 - servant
 - servant-server
 - servant-swagger
-- servant-elm
 - servant-auth
 - servant-auth-server
 - servant-auth-swagger
@@ -53,9 +52,11 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+  - template-haskell
 
 executables:
-  dbms-checker-exe:
+  dbms-checker-server:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -66,6 +67,19 @@ executables:
     dependencies:
     - dbms-checker
     - warp
+
+  client-api-generator:
+    main:                Main.hs
+    source-dirs:         client-api-generator
+    ghc-options:
+    - -threaded
+    - -dynamic
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dbms-checker
+    - servant-foreign
+    - aeson-typescript
 
 tests:
   dbms-checker-test:

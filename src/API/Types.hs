@@ -1,18 +1,10 @@
-{-# LANGUAGE DuplicateRecordFields, DeriveGeneric, DeriveAnyClass, TypeFamilies, DataKinds #-}
-{-# LANGUAGE DerivingStrategies, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DuplicateRecordFields, TypeFamilies, DataKinds #-}
 module API.Types where
 
 import Data.Text (Text)
-import GHC.Generics (Generic)
-import Data.Aeson (FromJSON, ToJSON)
-import Data.Swagger (ToSchema(..))
 
-
-import Servant (MimeRender, MimeUnrender, OctetStream)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
-import qualified Data.Swagger as S
-import Servant.Auth.Server
 
 import DBTypes
 
@@ -20,46 +12,62 @@ data UserSessionData = UserSessionData {
     userSessionUserId :: UserIdentifier
   , userSessionUserName :: T.Text
   , userSessionUserRole :: Role
-} deriving (Generic, FromJSON, ToJSON, FromJWT, ToJWT, ToSchema)
+}
 
 data AuthData = AuthData {
     authLogin :: T.Text
   , authPassword :: T.Text
-  } deriving (Generic, FromJSON, ToSchema)
-
+  }
 
 data AssignedTopicInfo =
     AssignedTopicInfoPredefined PredefinedTopic
   | AssignedTopicInfoCustom CustomTopic
-  deriving (Generic, FromJSON, ToJSON, ToSchema)
 
 newtype FileData = FileData { unFileData :: BL.ByteString }
-    deriving newtype (
-      MimeRender OctetStream
-    , MimeUnrender OctetStream
-    )
 
-instance ToSchema FileData where
-  declareNamedSchema _ = return $ S.NamedSchema Nothing S.binarySchema
+type family CanValidate (idType :: *) where
+  CanValidate FunDepIdentifier = 'True
+  CanValidate RelSchemaIdentifier = 'True
+  CanValidate PhysSchemaIdentifier = 'True
+  CanValidate idType = 'False
 
-type family BasicCrudResponseBody (idType :: *) (canAccept :: Bool) where
-  BasicCrudResponseBody idType 'False = BasicCrudResponseBodyWithoutValidation idType
-  BasicCrudResponseBody idType 'True = BasicCrudResponseBodyWithValidation idType
+type family CanAccept (idType :: *) where
+  CanAccept ERDIdentifier = 'True
+  CanAccept PhysSchemaIdentifier = 'True
+  CanAccept idType = 'False
 
-data BasicCrudResponseBodyWithoutValidation idType = BasicCrudResponseBodyWithoutValidation {
+type BasicCrudResponseBody (idType :: *) =
+    BasicCrudResponseBodyInternal (CanValidate idType) (CanAccept idType) idType
+
+type family BasicCrudResponseBodyInternal (canValidate :: Bool) (canAccept :: Bool) :: (* -> *) where
+    BasicCrudResponseBodyInternal 'False 'False = BasicCrudResponseBodyWithoutAnything
+    BasicCrudResponseBodyInternal 'True 'False = BasicCrudResponseBodyWithValidation
+    BasicCrudResponseBodyInternal 'False 'True = BasicCrudResponseBodyWithAcceptance
+    BasicCrudResponseBodyInternal 'True 'True = BasicCrudResponseBodyWithAcceptanceAndValidation
+
+data BasicCrudResponseBodyWithoutAnything idType = BasicCrudResponseBodyWithoutAnything {
     id :: idType
   , description :: Text
-  } deriving (Generic, ToJSON, FromJSON)
-
-instance (ToSchema idType) => ToSchema (BasicCrudResponseBodyWithoutValidation idType)
+  }
 
 data BasicCrudResponseBodyWithValidation idType = BasicCrudResponseBodyWithValidation {
     id :: idType
   , description :: Text
   , validationErrors :: [Text]
-  } deriving (Generic, ToJSON, FromJSON)
+  }
 
-instance (ToSchema idType) => ToSchema (BasicCrudResponseBodyWithValidation idType)
+data BasicCrudResponseBodyWithAcceptance idType = BasicCrudResponseBodyWithAcceptance {
+    id :: idType
+  , description :: Text
+  , accepted :: AcceptanceState
+  }
+
+data BasicCrudResponseBodyWithAcceptanceAndValidation idType = BasicCrudResponseBodyWithAcceptanceAndValidation {
+    id :: idType
+  , description :: Text
+  , validationErrors :: [Text]
+  , accepted :: AcceptanceState
+  }
 
 data CommentInfo = CommentInfo {
     id :: CommentIdentifier
@@ -69,15 +77,15 @@ data CommentInfo = CommentInfo {
   , commentPrio :: CommentPriority
   , commentText :: Text
   , commentStatus :: CommentStatus
-  } deriving (Generic, FromJSON, ToJSON, ToSchema)
+  }
 
 data CommentBodyInfo = CommentBodyInfo {
     parentItem :: ParentItemIdentifier
   , parentComment :: ParentComment
   , commentPrio :: CommentPriority
   , commentText :: Text
-  } deriving (Generic, FromJSON, ToJSON, ToSchema)
+  }
 
 data CommentStatusInfo = CommentStatusInfo {
     commentStatus :: CommentStatus
-  } deriving (Generic, FromJSON, ToJSON, ToSchema)
+  }
