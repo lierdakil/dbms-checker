@@ -1,0 +1,3 @@
+[submodule "project-m36"]
+	path = project-m36
+	url = git@github.com:lierdakil/project-m36.git

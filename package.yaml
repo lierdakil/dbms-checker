@@ -1,0 +1,79 @@
+name:                dbms-checker
+version:             0.1.0.0
+github:              "githubuser/dbms-checker"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2018 Author name here"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/dbms-checker#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- project-m36
+- servant
+- servant-server
+- servant-swagger
+- servant-elm
+- servant-auth
+- servant-auth-server
+- servant-auth-swagger
+- wai
+- wai-cors
+- wai-extra
+- wai-middleware-static
+- http-types
+- swagger2
+- servant-swagger-ui
+- cryptonite
+- network-uri
+- megaparsec
+- aeson
+- lens
+- text
+- binary
+- bytestring
+- deepseq
+- containers
+- mtl
+- time
+- jose
+- ghc-prim
+
+library:
+  source-dirs: src
+
+executables:
+  dbms-checker-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -dynamic
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dbms-checker
+    - warp
+
+tests:
+  dbms-checker-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dbms-checker
