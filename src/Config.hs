@@ -21,6 +21,7 @@ import Control.Monad.Catch
 import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Servant
+import Data.Time
 import ProjectM36.Client (Connection, SessionId)
 
 import API.Types
@@ -62,6 +63,7 @@ data Config = Config {
   , configDBSession  :: !SessionId
   , configPort       :: !Int
   , configOrigins    :: !(Maybe [String])
+  , configSessionDur :: !NominalDiffTime
   }
 
 ntEnv :: Config -> Env a -> Servant.Handler a

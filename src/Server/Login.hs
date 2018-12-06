@@ -24,6 +24,7 @@ import DB.Accessor
 import Control.Monad.IO.Class
 import TutorialD.QQ
 import Control.Monad
+import Data.Time
 
 loginServer :: JWTSettings -> ServerT LoginAPI Env
 loginServer = checkCreds
@@ -43,4 +44,6 @@ checkCreds jwtCfg AuthData{..} = do
      , userSessionUserName = authLogin
      , userSessionUserRole = role
   }
-  BL8.unpack <$> (handle =<< liftIO (makeJWT usr jwtCfg Nothing))
+  sd <- asks configSessionDur
+  expirationDateTime <- Just . addUTCTime sd <$> liftIO getCurrentTime
+  BL8.unpack <$> (handle =<< liftIO (makeJWT usr jwtCfg expirationDateTime))

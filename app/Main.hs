@@ -8,6 +8,7 @@ import Network.Wai.Handler.Warp (run)
 import Servant.Auth.Server
 import Servant.Auth.Server.SetCookieOrphan ()
 import Data.Maybe
+import Data.Time
 import System.Environment
 
 import ProjectM36.Client
@@ -29,6 +30,7 @@ main = do
   , configDBSession    = sessionId
   , configPort       = fromMaybe 8081 (read <$> lookup "DBMS_CHECKER_PORT" env)
   , configOrigins    = words <$> lookup "DBMS_CHECKER_ORIGINS" env
+  , configSessionDur = nominalDay * fromMaybe 7 (read <$> lookup "DBMS_SESSION_EXPIRATION_DAYS" env)
   }
   let keyPath = "data/jwtKey.json"
       handleErr err = do
