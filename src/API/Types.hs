@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, TypeFamilies, DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields, TypeFamilies, DataKinds, RecordWildCards #-}
 module API.Types where
 
 import Data.Text (Text)
@@ -68,6 +68,41 @@ data BasicCrudResponseBodyWithAcceptanceAndValidation idType = BasicCrudResponse
   , validationErrors :: [Text]
   , accepted :: AcceptanceState
   }
+
+type family Identifier a
+type instance Identifier ERDiagram = ERDIdentifier
+type instance Identifier FunctionalDependencies = FunDepIdentifier
+type instance Identifier RelationalSchema = RelSchemaIdentifier
+type instance Identifier PhysicalSchema = PhysSchemaIdentifier
+
+class HasResponseBody a where
+  toResponseBody :: a -> BasicCrudResponseBody (Identifier a)
+
+instance HasResponseBody ERDiagram where
+  toResponseBody ERDiagram{..} = BasicCrudResponseBodyWithAcceptance {
+      id = id
+    , description = diagram
+    , accepted = accepted
+    }
+instance HasResponseBody FunctionalDependencies where
+  toResponseBody FunctionalDependencies{..} = BasicCrudResponseBodyWithValidation {
+      id = id
+    , description = funDeps
+    , validationErrors = []
+    }
+instance HasResponseBody RelationalSchema where
+  toResponseBody RelationalSchema{..} = BasicCrudResponseBodyWithValidation {
+      id = id
+    , description = relations
+    , validationErrors = []
+    }
+instance HasResponseBody PhysicalSchema where
+  toResponseBody PhysicalSchema{..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
+      id = id
+    , description = schemaSQL
+    , accepted = accepted
+    , validationErrors = []
+    }
 
 data CommentInfo = CommentInfo {
     id :: CommentIdentifier
