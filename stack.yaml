@@ -27,7 +27,7 @@ allow-newer: true
 
 flags:
   project-m36:
-    build-examples: true
+    build-examples: false
 
 ghc-options:
   $targets: -Wall -optl-fuse-ld=bfd
