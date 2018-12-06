@@ -7,27 +7,13 @@
 
 module Server.Main.CustomTopics where
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LT
-import qualified Data.Set as S
 import Control.Monad.Reader
 import Config
 import API
 import API.Types
 import DB.Types
 import Servant
-import Control.Monad.Error.Class
-import Data.Monoid ((<>))
-import Crypto.Hash (hash, Digest, SHA1)
-import Data.Char (isAlphaNum)
-import Control.Exception
-import System.IO.Error
-import Config
-import DB.Types
 import DB.Instances ()
 import DB.Accessor
 import DB.Utils
@@ -52,7 +38,7 @@ postCustomTopic topicName = do
   let assignment = TopicAssignment { userId = uId, topic = CustomAssignedTopic nid }
   execDB [tutdctx|TopicAssignment := TopicAssignment where not userId = $uId
     union $assignment|]
-  dbCommit
+  commitDB
   return $ AssignedTopicInfoCustom topic
 
 putCustomTopic :: CustomTopicIdentifier -> Text -> SessionEnv (Maybe AssignedTopicInfo)
@@ -60,7 +46,7 @@ putCustomTopic tid topicName = do
   uId <- asks (userSessionUserId . sessionData)
   execDB [tutdctx|update CustomTopic where id = $tid and userId = $uId (
     name := $topicName, accepted := NotAccepted )|]
-  dbCommit
+  commitDB
   (tasgn :: [TopicAssignment]) <- fromRelation =<< execDB [tutdrel|TopicAssignment where userId = $uId|]
   if null tasgn
   then return Nothing
@@ -76,4 +62,8 @@ putCustomTopic tid topicName = do
     tryHead c (x:_) = Just (c x)
 
 patchCustomTopic :: CustomTopicIdentifier -> AcceptanceState -> SessionEnv ()
-patchCustomTopic tid acceptanceState = undefined
+patchCustomTopic tid acceptanceState = do
+  userRole <- asks (userSessionUserRole . sessionData)
+  when (userRole /= Teacher) $ throwError err403
+  execDB [tutdctx|update CustomTopic where id = $tid (accepted := $acceptanceState)|]
+  commitDB

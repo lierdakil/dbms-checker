@@ -16,8 +16,8 @@ import qualified Data.Text.Lazy.Encoding as LT
 import Control.Monad.IO.Class
 import Control.Monad.Except
 
-dbCommit :: (MonadIO m, MonadError ServantErr m, HasDBConfig m) => m ()
-dbCommit = do
+commitDB :: (MonadIO m, MonadError ServantErr m, HasDBConfig m) => m ()
+commitDB = do
   (conn, sid) <- getDBConfig
   handle =<< liftIO (commit sid conn)
 
