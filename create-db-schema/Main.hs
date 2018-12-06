@@ -6,12 +6,12 @@
 module Main where
 
 import ProjectM36.Client
-import ProjectM36.Base
-import Data.Time
-import TutorialD.QQ
-import DB.Types
+import API.TH
+import DB.TypeLists
 import DB.Instances ()
 import ProjectM36.Tupleable
+import qualified Data.Text as T
+import Language.Haskell.TH.Syntax
 
 main :: IO ()
 main = do
@@ -28,7 +28,7 @@ main = do
   -- this creates the domains and relations, but not the constraints
   _ <- mapM (eCheck . executeDatabaseContextExpr sessionId conn) $
       $(foldr (\x acc -> [|toAddTypeExpr $(makeProxy x) : $acc|]) [|[]|] domains) ++
-      $(foldr (\x acc -> [|toDefineExpr $(makeProxy x) (T.pack $ nameBase x) : $acc|]) [|[]|] relations) ++
+      $(foldr (\x acc -> [|toDefineExpr $(makeProxy x) (T.pack $ nameBase x) : $acc|]) [|[]|] DB.TypeLists.relations) ++
       []
 
   -- this is some sample code
