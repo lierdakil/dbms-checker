@@ -49,62 +49,63 @@ data CommentStatus =
 -- Relations
 
 data User = User {
-    id :: UserIdentifier
-  , username :: Text
-  , group :: Group
-  , saltedPasswordHash :: ByteString
-  , registrationDate :: UTCTime
-  , role :: Role
+    id :: !UserIdentifier
+  , username :: !Text
+  , group :: !Group
+  , saltedPasswordHash :: !ByteString
+  , registrationDate :: !UTCTime
+  , role :: !Role
   }
 
 data PredefinedTopic = PredefinedTopic {
-    id :: PredefinedTopicIdentifier
-  , name :: Text
+    id :: !PredefinedTopicIdentifier
+  , name :: !Text
   }
 
 data CustomTopic = CustomTopic {
-    id :: CustomTopicIdentifier
-  , name :: Text
-  , accepted :: AcceptanceState
+    id :: !CustomTopicIdentifier
+  , name :: !Text
+  , topicAuthor :: !UserIdentifier
+  , accepted :: !AcceptanceState
   }
 
 data TopicAssignments = TopicAssignments {
-    userId :: UserIdentifier
-  , topic :: AssignedTopic
+    userId :: !UserIdentifier
+  , topic :: !AssignedTopic
 }
 
 data ERDiagram = ERDiagram {
-    id :: ERDIdentifier
-  , userId :: UserIdentifier
-  , diagram :: Text
-  , accepted :: AcceptanceState
+    id :: !ERDIdentifier
+  , userId :: !UserIdentifier
+  , diagram :: !Text
+  , accepted :: !AcceptanceState
   }
 
 data Comment = Comment {
-    id :: CommentIdentifier
-  , parentItem :: ParentItemIdentifier
-  , parentComment :: ParentComment
-  , commentAuthor :: UserIdentifier
-  , commentPrio :: CommentPriority
-  , commentText :: Text
-  , commentStatus :: CommentStatus
+    id :: !CommentIdentifier
+  , parentItem :: !ParentItemIdentifier
+  , parentComment :: !ParentComment
+  , commentAuthor :: !UserIdentifier
+  , commentPrio :: !CommentPriority
+  , commentText :: !Text
+  , commentStatus :: !CommentStatus
   }
 
 data FunctionalDependencies = FunctionalDependencies {
-    id :: FunDepIdentifier
-  , userId :: UserIdentifier
-  , funDeps :: Text
+    id :: !FunDepIdentifier
+  , userId :: !UserIdentifier
+  , funDeps :: !Text
   }
 
 data RelationalSchema = RelationalSchema {
-    id :: RelSchemaIdentifier
-  , userId :: UserIdentifier
-  , relations :: Text
+    id :: !RelSchemaIdentifier
+  , userId :: !UserIdentifier
+  , relations :: !Text
   }
 
 data PhysicalSchema = PhysicalSchema {
-    id :: PhysSchemaIdentifier
-  , userId :: UserIdentifier
-  , schemaSQL :: Text
-  , accepted :: AcceptanceState
+    id :: !PhysSchemaIdentifier
+  , userId :: !UserIdentifier
+  , schemaSQL :: !Text
+  , accepted :: !AcceptanceState
   }

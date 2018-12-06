@@ -43,13 +43,14 @@ customTopics = postCustomTopic :<|>
 postCustomTopic :: Text -> SessionEnv AssignedTopicInfo
 postCustomTopic topicName = do
   nid <- getNewId CustomTopicIdentifier
+  uId <- asks (userSessionUserId . sessionData)
   let topic = CustomTopic {
     id = nid
   , name = topicName
+  , topicAuthor = uId
   , accepted = NotAccepted
   }
   execDB [tutdctx|insert CustomTopic $topic|]
-  uId <- asks (userSessionUserId . sessionData)
   execDB [tutdctx|update TopicAssignments where userId = $uId (topic:=CustomAssignedTopic $nid)|]
   dbCommit
   return $ AssignedTopicInfoCustom topic
