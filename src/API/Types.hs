@@ -89,3 +89,8 @@ data CommentBodyInfo = CommentBodyInfo {
 data CommentStatusInfo = CommentStatusInfo {
     commentStatus :: CommentStatus
   }
+
+type ERDBody = BasicCrudResponseBodyWithAcceptance ERDIdentifier
+type FunDepBody = BasicCrudResponseBodyWithValidation FunDepIdentifier
+type RelSchemaBody = BasicCrudResponseBodyWithValidation RelSchemaIdentifier
+type PhysSchemaBody = BasicCrudResponseBodyWithAcceptanceAndValidation PhysSchemaIdentifier
