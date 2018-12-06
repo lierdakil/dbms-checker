@@ -19,6 +19,7 @@ import API.Types
 import API.Instances ()
 import GHC.Types (Symbol)
 import Servant.Swagger.UI
+import qualified Data.ByteString.Lazy as BL
 
 type CustomTopicsAPI =
        ReqBody '[JSON] Text :> Post '[JSON] AssignedTopicInfo
@@ -91,7 +92,7 @@ type family ExtendWithAcceptInternal (canAccept :: Bool) (a :: *) where
 
 type MainAPI = Auth '[JWT] UserSessionData :> BasicAPI
 
-type LoginAPI = "auth" :> ReqBody '[JSON] AuthData :> Post '[JSON] UserSessionData
+type LoginAPI = "auth" :> ReqBody '[JSON] AuthData :> Post '[JSON] String
 
 type API = MainAPI
       :<|> LoginAPI

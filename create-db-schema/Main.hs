@@ -12,6 +12,12 @@ import DB.Instances ()
 import ProjectM36.Tupleable
 import qualified Data.Text as T
 import Language.Haskell.TH.Syntax
+import Crypto.KDF.BCrypt
+import Data.UUID.V1
+import DB.Types
+import Data.Time
+import Data.ByteString (ByteString)
+import TutorialD.QQ
 
 main :: IO ()
 main = do
@@ -31,27 +37,18 @@ main = do
       $(foldr (\x acc -> [|toDefineExpr $(makeProxy x) (T.pack $ nameBase x) : $acc|]) [|[]|] DB.TypeLists.relations) ++
       []
 
-  -- this is some sample code
-  -- time <- getCurrentTime
-  -- let user = User {
-  --       DB.Types.id = UserIdentifier 1
-  --     , username = "test"
-  --     , group = NoGroup
-  --     , saltedPasswordHash = "asd"
-  --     , passwordSalt = "asd"
-  --     , registrationDate = time
-  --     , role = Teacher
-  --   }
-  -- eCheck $ executeDatabaseContextExpr sessionId conn $
-  --   -- either (error . show) Prelude.id $ toInsertExpr [user] "User"
-  --   [tutdctx|insert User $user|]
-  -- rel <- eCheck $ executeRelationalExpr sessionId conn $
-  --   [tutdrel|User|]
-  -- -- eCheck $ commit sessionId conn
-  -- let user2 = either (error . show) Prelude.id (fromRelation rel) :: [User]
-  -- putStrLn (show user2)
+  time <- getCurrentTime
+  Just uuid <- nextUUID
+  pwd <- hashPassword 12 ("password" :: ByteString)
+  let user = User {
+        DB.Types.id = UserIdentifier uuid
+      , username = "test"
+      , group = NoGroup
+      , saltedPasswordHash = pwd
+      , registrationDate = time
+      , role = Teacher
+    }
+  eCheck $ executeDatabaseContextExpr sessionId conn $ [tutdctx|insert User $user|]
+  eCheck $ commit sessionId conn
 
   return ()
-
--- deriving instance Show User
--- fromRelation (Relation _ tupset) = sequence $ map fromTuple $ asList tupset

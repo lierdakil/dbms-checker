@@ -53,7 +53,6 @@ data User = User {
   , username :: Text
   , group :: Group
   , saltedPasswordHash :: ByteString
-  , passwordSalt :: ByteString
   , registrationDate :: UTCTime
   , role :: Role
   }

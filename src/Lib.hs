@@ -20,7 +20,7 @@ app :: JWK -> Config -> Application
 app jwtKey cfg = logStdoutDev
     $ static
     $ cors (const $ Just corspolicy)
-    $ serveWithContext api cfgctx (server cfg)
+    $ serveWithContext api cfgctx (server jwtCfg cfg)
   where
   jwtCfg = defaultJWTSettings jwtKey
   cfgctx = defaultCookieSettings :. jwtCfg :. cfg :. EmptyContext

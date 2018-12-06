@@ -17,9 +17,9 @@ authServer cfg (Auth.Authenticated sess) =
   hoistServerWithContext basicApi context (ntSessionEnv cfg sess) mainServer
 authServer _ _ = throwAll err401
 
-server :: Config -> Server API
-server cfg = authServer cfg
-  :<|> hoistServerWithContext loginApi context (ntEnv cfg) loginServer
+server :: JWTSettings -> Config -> Server API
+server jwt cfg = authServer cfg
+  :<|> hoistServerWithContext loginApi context (ntEnv cfg) (loginServer jwt)
   :<|> swaggerSchemaUIServer swaggerDoc
 
 context :: Proxy '[CookieSettings, JWTSettings]
