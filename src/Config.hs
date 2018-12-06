@@ -4,7 +4,7 @@
 
 module Config (
     asks
-  , ConfigHandler(..)
+  , Env(..)
   , Config(..)
   , readConfigFromEnv
   , convertServer
@@ -19,8 +19,8 @@ import Control.Monad.Except
 import Servant
 import Servant.Utils.Enter
 
-newtype ConfigHandler a = ConfigHandler {
-    runConfigHandler :: ReaderT Config (ExceptT ServantErr IO) a
+newtype Env a = Env {
+    runEnv :: ReaderT Config (ExceptT ServantErr IO) a
   } deriving ( Functor, Applicative, Monad, MonadReader Config,
                MonadError ServantErr, MonadIO)
 
@@ -34,11 +34,11 @@ data Config = Config {
   , configNewCmdFile :: !(Maybe FilePath)
   }
 
-convertHandler :: Config -> ConfigHandler :~> Handler
-convertHandler cfg = NT (Handler . flip runReaderT cfg . runConfigHandler)
+convertHandler :: Config -> Env :~> Handler
+convertHandler cfg = NT (Handler . flip runReaderT cfg . runEnv)
 
-convertServer :: Enter (Entered Handler ConfigHandler t) ConfigHandler Handler t
-              => Config -> Entered Handler ConfigHandler t -> t
+convertServer :: Enter (Entered Handler Env t) Env Handler t
+              => Config -> Entered Handler Env t -> t
 convertServer cfg = enter (convertHandler cfg)
 
 readConfigFromEnv :: IO Config

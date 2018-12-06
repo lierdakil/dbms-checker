@@ -23,7 +23,7 @@ import Crypto.Random
 import GHC.Conc
 import Data.Maybe
 
-loginServer :: ServerT LoginAPI ConfigHandler
+loginServer :: ServerT LoginAPI Env
 loginServer = undefined
 --
 -- authCheck :: AuthMap -> Config -> AuthHandler Request User
