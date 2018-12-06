@@ -32,8 +32,6 @@ import DB.Instances ()
 import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
-import Data.UUID.V1
-import Data.Maybe
 
 customTopics :: ServerT CustomTopicsAPI SessionEnv
 customTopics = postCustomTopic :<|>
@@ -51,16 +49,18 @@ postCustomTopic topicName = do
   , accepted = NotAccepted
   }
   execDB [tutdctx|insert CustomTopic $topic|]
-  execDB [tutdctx|update TopicAssignment where userId = $uId (topic:=CustomAssignedTopic $nid)|]
+  let assignment = TopicAssignment { userId = uId, topic = CustomAssignedTopic nid }
+  execDB [tutdctx|TopicAssignment := TopicAssignment where not userId = $uId
+    union $assignment|]
   dbCommit
   return $ AssignedTopicInfoCustom topic
 
 putCustomTopic :: CustomTopicIdentifier -> Text -> SessionEnv (Maybe AssignedTopicInfo)
 putCustomTopic tid topicName = do
-  execDB [tutdctx|update CustomTopic where id = $tid (
-    name := $topicName, accepted := Accepted )|]
-  dbCommit
   uId <- asks (userSessionUserId . sessionData)
+  execDB [tutdctx|update CustomTopic where id = $tid and userId = $uId (
+    name := $topicName, accepted := NotAccepted )|]
+  dbCommit
   (tasgn :: [TopicAssignment]) <- fromRelation =<< execDB [tutdrel|TopicAssignment where userId = $uId|]
   if null tasgn
   then return Nothing

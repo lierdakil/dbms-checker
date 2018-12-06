@@ -72,7 +72,7 @@ data CustomTopic = CustomTopic {
 data TopicAssignment = TopicAssignment {
     userId :: !UserIdentifier
   , topic :: !AssignedTopic
-}
+  }
 
 data ERDiagram = ERDiagram {
     id :: !ERDIdentifier
