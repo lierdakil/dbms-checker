@@ -69,7 +69,7 @@ data CustomTopic = CustomTopic {
   , accepted :: !AcceptanceState
   }
 
-data TopicAssignments = TopicAssignments {
+data TopicAssignment = TopicAssignment {
     userId :: !UserIdentifier
   , topic :: !AssignedTopic
 }

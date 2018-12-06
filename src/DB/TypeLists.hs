@@ -30,7 +30,7 @@ relations = [
     ''User
   , ''PredefinedTopic
   , ''CustomTopic
-  , ''TopicAssignments
+  , ''TopicAssignment
   , ''ERDiagram
   , ''Comment
   , ''FunctionalDependencies

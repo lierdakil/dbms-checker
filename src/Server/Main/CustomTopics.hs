@@ -51,7 +51,7 @@ postCustomTopic topicName = do
   , accepted = NotAccepted
   }
   execDB [tutdctx|insert CustomTopic $topic|]
-  execDB [tutdctx|update TopicAssignments where userId = $uId (topic:=CustomAssignedTopic $nid)|]
+  execDB [tutdctx|update TopicAssignment where userId = $uId (topic:=CustomAssignedTopic $nid)|]
   dbCommit
   return $ AssignedTopicInfoCustom topic
 
@@ -61,7 +61,7 @@ putCustomTopic tid topicName = do
     name := $topicName, accepted := Accepted )|]
   dbCommit
   uId <- asks (userSessionUserId . sessionData)
-  (tasgn :: [TopicAssignments]) <- fromRelation =<< execDB [tutdrel|TopicAssignments where userId = $uId|]
+  (tasgn :: [TopicAssignment]) <- fromRelation =<< execDB [tutdrel|TopicAssignment where userId = $uId|]
   if null tasgn
   then return Nothing
   else do
