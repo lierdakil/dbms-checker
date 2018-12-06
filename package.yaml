@@ -49,6 +49,7 @@ dependencies:
 - time
 - jose
 - ghc-prim
+- deepseq
 
 library:
   source-dirs: src
@@ -80,6 +81,18 @@ executables:
     - dbms-checker
     - servant-foreign
     - aeson-typescript
+
+  create-db-schema:
+    main:                Main.hs
+    source-dirs:         create-db-schema
+    ghc-options:
+    - -threaded
+    - -dynamic
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dbms-checker
+    - template-haskell
 
 tests:
   dbms-checker-test:
