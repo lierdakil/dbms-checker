@@ -6,7 +6,7 @@ import Data.Text (Text)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 
-import DBTypes
+import DB.Types
 
 data UserSessionData = UserSessionData {
     userSessionUserId :: UserIdentifier

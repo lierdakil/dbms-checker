@@ -9,7 +9,7 @@ import API.TH
 
 import GHC.Generics (Generic)
 import Servant.Auth.Server
-import DBTypes
+import DB.Types
 import API.Types
 import Control.Lens
 import Data.Text (pack, unpack)
@@ -20,6 +20,8 @@ import Data.Swagger (ToSchema(..))
 import qualified Data.Swagger as S
 import Data.Swagger.Schema (genericDeclareNamedSchemaUnrestricted, defaultSchemaOptions)
 
+import API.TypeLists
+
 deriving instance MimeRender OctetStream FileData
 instance ToSchema FileData where
   declareNamedSchema _ = return $ S.NamedSchema Nothing S.binarySchema
@@ -27,13 +29,7 @@ instance ToSchema FileData where
 instance FromJWT UserSessionData
 instance ToJWT UserSessionData
 
-$(mconcat <$> traverse deriveJSONOnly [
-    ''ParentComment
-  , ''BasicCrudResponseBodyWithoutAnything
-  , ''BasicCrudResponseBodyWithValidation
-  , ''BasicCrudResponseBodyWithAcceptance
-  , ''BasicCrudResponseBodyWithAcceptanceAndValidation
-  ])
+$(mconcat <$> traverse deriveJSONOnly jsonOnlyTypes)
 
 deriving instance Generic ParentComment
 instance ToSchema ParentComment where
@@ -49,30 +45,7 @@ instance (ToSchema a) => ToSchema (BasicCrudResponseBodyWithAcceptance a)
 instance (ToSchema a) => ToSchema (BasicCrudResponseBodyWithAcceptanceAndValidation a)
 
 
-$(mconcat <$> traverse deriveJSONAndSchema [
-    ''UserIdentifier
-  , ''PredefinedTopicIdentifier
-  , ''CustomTopicIdentifier
-  , ''ERDIdentifier
-  , ''CommentIdentifier
-  , ''FunDepIdentifier
-  , ''RelSchemaIdentifier
-  , ''PhysSchemaIdentifier
-  , ''Role
-  , ''AuthData
-  , ''UserSessionData
-  , ''PredefinedTopic
-  , ''AssignedTopicInfo
-  , ''CustomTopic
-  , ''AcceptanceState
-  , ''AssignedTopic
-  , ''CommentInfo
-  , ''CommentBodyInfo
-  , ''ParentItemIdentifier
-  , ''CommentPriority
-  , ''CommentStatus
-  , ''CommentStatusInfo
-  ])
+$(mconcat <$> traverse deriveJSONAndSchema jsonAndSchemaTypes)
 
 $(mconcat <$> traverse deriveToParamSchema [
     ''UserIdentifier

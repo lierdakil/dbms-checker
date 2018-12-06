@@ -15,7 +15,7 @@ import Servant
 import Data.Text (Text)
 import qualified Data.Text as T
 import Servant.Auth.Server
-import DBTypes
+import DB.Types
 import API.Types
 import API.Instances ()
 import GHC.Types (Symbol)

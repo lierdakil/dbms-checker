@@ -8,6 +8,7 @@ import API.JsonDeriv
 import Data.Aeson.TH
 import Servant (FromHttpApiData)
 import Control.Monad
+import Data.Proxy
 
 deriveToSchema :: Name -> Q [Dec]
 deriveToSchema t = let typ = return $ ConT t in do
@@ -30,3 +31,7 @@ deriveJSONAndSchema t = do
 
 deriveJSONOnly :: Name -> Q [Dec]
 deriveJSONOnly = deriveJSON jsonDerivationOptions
+
+makeProxy :: Name -> Q Exp
+makeProxy t = [|Proxy :: Proxy $typ|]
+  where typ = return $ ConT t

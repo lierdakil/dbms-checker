@@ -1,7 +1,6 @@
-{-# LANGUAGE DuplicateRecordFields #-}
-module DBTypes where
+{-# LANGUAGE DuplicateRecordFields, DeriveAnyClass #-}
+module DB.Types where
 
-import Servant (FromHttpApiData(..))
 import Data.Text (Text)
 import Data.ByteString (ByteString)
 import Data.Time (UTCTime)
@@ -11,25 +10,16 @@ import Data.Word (Word)
 -- Domains
 
 newtype UserIdentifier = UserIdentifier Word
-
 newtype PredefinedTopicIdentifier = PredefinedTopicIdentifier Word
-
 newtype CustomTopicIdentifier = CustomTopicIdentifier Word
-
 newtype ERDIdentifier = ERDIdentifier Word
-
 newtype CommentIdentifier = CommentIdentifier Word
-
 newtype FunDepIdentifier = FunDepIdentifier Word
-
 newtype RelSchemaIdentifier = RelSchemaIdentifier Word
-
 newtype PhysSchemaIdentifier = PhysSchemaIdentifier Word
 
 data Role = Student | Teacher
-
 data Group = NoGroup | Group Text
-
 data AcceptanceState = Accepted | NotAccepted
 
 data AssignedTopic =
