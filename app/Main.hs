@@ -11,9 +11,7 @@ import Data.Maybe
 import System.Environment
 
 import ProjectM36.Client
-import Control.Monad.Catch
-
-instance Exception String
+import System.IO.Error
 
 main :: IO ()
 main = do
@@ -34,10 +32,11 @@ main = do
   }
   let keyPath = "data/jwtKey.json"
       handleErr err = do
-        putStrLn err
+        putStrLn $ show err
+        putStrLn $ "Trying to create JWT key file..."
         writeKey keyPath
         readKey keyPath
-  keyFromFile <- try $ readKey keyPath
+  keyFromFile <- tryIOError $ readKey keyPath
   myKey <- case keyFromFile of
     Right key -> return key
     Left err -> handleErr err
