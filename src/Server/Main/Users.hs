@@ -25,7 +25,7 @@ import Data.Char (isAlphaNum)
 import Control.Exception
 import System.IO.Error
 
-users :: ServerT UsersAPI Env
+users :: ServerT UsersAPI SessionEnv
 users userId =
         (getUsersTopic userId
    :<|> patchUsersTopic userId)
@@ -34,20 +34,20 @@ users userId =
    :<|> getUsersRelSchema userId
    :<|> getUsersSqlSchema userId
 
-getUsersTopic :: UserIdentifier -> Env AssignedTopicInfo
+getUsersTopic :: UserIdentifier -> SessionEnv AssignedTopicInfo
 getUsersTopic userId = undefined
 
-patchUsersTopic :: UserIdentifier -> AssignedTopic -> Env AssignedTopicInfo
+patchUsersTopic :: UserIdentifier -> AssignedTopic -> SessionEnv AssignedTopicInfo
 patchUsersTopic userId assignedTopic = undefined
 
-getUsersErd :: UserIdentifier -> Env ERDBody
+getUsersErd :: UserIdentifier -> SessionEnv ERDBody
 getUsersErd userId = undefined
 
-getUsersFundep :: UserIdentifier -> Env FunDepBody
+getUsersFundep :: UserIdentifier -> SessionEnv FunDepBody
 getUsersFundep userId = undefined
 
-getUsersRelSchema :: UserIdentifier -> Env RelSchemaBody
+getUsersRelSchema :: UserIdentifier -> SessionEnv RelSchemaBody
 getUsersRelSchema userId = undefined
 
-getUsersSqlSchema :: UserIdentifier -> Env PhysSchemaBody
+getUsersSqlSchema :: UserIdentifier -> SessionEnv PhysSchemaBody
 getUsersSqlSchema userId = undefined

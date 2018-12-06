@@ -25,21 +25,21 @@ import Data.Char (isAlphaNum)
 import Control.Exception
 import System.IO.Error
 
-comments :: ServerT CommentsAPI Env
+comments :: ServerT CommentsAPI SessionEnv
 comments = postComment
       :<|> getComments
       :<|> \commentId ->
             putComment commentId
        :<|> patchComment commentId
 
-postComment :: CommentBodyInfo -> Env CommentInfo
+postComment :: CommentBodyInfo -> SessionEnv CommentInfo
 postComment = undefined
 
-getComments :: Maybe ParentItemIdentifier -> Env [CommentInfo]
+getComments :: Maybe ParentItemIdentifier -> SessionEnv [CommentInfo]
 getComments = undefined
 
-putComment :: CommentIdentifier -> CommentBodyInfo -> Env CommentInfo
+putComment :: CommentIdentifier -> CommentBodyInfo -> SessionEnv CommentInfo
 putComment = undefined
 
-patchComment :: CommentIdentifier -> CommentStatusInfo -> Env ()
+patchComment :: CommentIdentifier -> CommentStatusInfo -> SessionEnv ()
 patchComment = undefined

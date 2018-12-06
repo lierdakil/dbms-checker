@@ -2,6 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main.CustomTopics where
 
@@ -24,17 +26,53 @@ import Crypto.Hash (hash, Digest, SHA1)
 import Data.Char (isAlphaNum)
 import Control.Exception
 import System.IO.Error
+import Config
+import DB.Types
+import DB.Instances ()
+import DB.Accessor
+import DB.Utils
+import TutorialD.QQ
+import Data.UUID.V1
+import Data.Maybe
 
-customTopics :: ServerT CustomTopicsAPI Env
+customTopics :: ServerT CustomTopicsAPI SessionEnv
 customTopics = postCustomTopic :<|>
   \tid -> putCustomTopic tid
      :<|> patchCustomTopic tid
 
-postCustomTopic :: Text -> Env AssignedTopicInfo
-postCustomTopic topicName = undefined
+postCustomTopic :: Text -> SessionEnv AssignedTopicInfo
+postCustomTopic topicName = do
+  nid <- getNewId CustomTopicIdentifier
+  let topic = CustomTopic {
+    id = nid
+  , name = topicName
+  , accepted = NotAccepted
+  }
+  execDB [tutdctx|insert CustomTopic $topic|]
+  uId <- asks (userSessionUserId . sessionData)
+  execDB [tutdctx|update TopicAssignments where userId = $uId (topic:=CustomAssignedTopic $nid)|]
+  dbCommit
+  return $ AssignedTopicInfoCustom topic
 
-putCustomTopic :: CustomTopicIdentifier -> Text -> Env AssignedTopicInfo
-putCustomTopic tid topicName = undefined
+putCustomTopic :: CustomTopicIdentifier -> Text -> SessionEnv (Maybe AssignedTopicInfo)
+putCustomTopic tid topicName = do
+  execDB [tutdctx|update CustomTopic where id = $tid (
+    name := $topicName, accepted := Accepted )|]
+  dbCommit
+  uId <- asks (userSessionUserId . sessionData)
+  (tasgn :: [TopicAssignments]) <- fromRelation =<< execDB [tutdrel|TopicAssignments where userId = $uId|]
+  if null tasgn
+  then return Nothing
+  else do
+    let tas = head tasgn
+    case topic tas of
+      (PredefinedAssignedTopic ttid) -> tryHead AssignedTopicInfoPredefined <$>
+        (fromRelation =<< execDB [tutdrel|PredefinedTopic where id = $ttid|])
+      (CustomAssignedTopic ttid) -> tryHead AssignedTopicInfoCustom <$>
+        (fromRelation =<< execDB [tutdrel|CustomTopic where id = $ttid|])
+  where
+    tryHead _ [] = Nothing
+    tryHead c (x:_) = Just (c x)
 
-patchCustomTopic :: CustomTopicIdentifier -> AcceptanceState -> Env ()
+patchCustomTopic :: CustomTopicIdentifier -> AcceptanceState -> SessionEnv ()
 patchCustomTopic tid acceptanceState = undefined

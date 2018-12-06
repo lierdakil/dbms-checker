@@ -26,7 +26,7 @@ import Control.Exception
 import System.IO.Error
 
 
-erd :: ServerT (BasicCrud "erdId" ERDIdentifier) Env
+erd :: ServerT (BasicCrud "erdId" ERDIdentifier) SessionEnv
 erd = postErd
   :<|> erdManip
   where
@@ -36,17 +36,17 @@ erd = postErd
          :<|> getErd erdId
          :<|> putErd erdId
 
-getErd :: ERDIdentifier -> Env ERDBody
+getErd :: ERDIdentifier -> SessionEnv ERDBody
 getErd erdId = undefined
 
-postErd :: Text -> Env ERDBody
+postErd :: Text -> SessionEnv ERDBody
 postErd = undefined
 
-putErd :: ERDIdentifier -> Text -> Env ERDBody
+putErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
 putErd = undefined
 
-patchErd :: ERDIdentifier -> AcceptanceState -> Env ()
+patchErd :: ERDIdentifier -> AcceptanceState -> SessionEnv ()
 patchErd = undefined
 
-renderErd :: ERDIdentifier -> Env FileData
+renderErd :: ERDIdentifier -> SessionEnv FileData
 renderErd = undefined

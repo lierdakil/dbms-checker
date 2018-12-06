@@ -46,10 +46,15 @@ dependencies:
 - deepseq
 - containers
 - mtl
+- transformers
+- transformers-base
+- monad-control
 - time
 - jose
 - ghc-prim
 - deepseq
+- exceptions
+- uuid
 
 library:
   source-dirs: src

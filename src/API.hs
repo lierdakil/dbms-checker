@@ -23,7 +23,7 @@ import Servant.Swagger.UI
 type CustomTopicsAPI =
        ReqBody '[JSON] Text :> Post '[JSON] AssignedTopicInfo
   :<|> Capture "topicId" CustomTopicIdentifier :> (
-            ReqBody '[JSON] Text :> Put '[JSON] AssignedTopicInfo
+            ReqBody '[JSON] Text :> Put '[JSON] (Maybe AssignedTopicInfo)
        :<|> ReqBody '[JSON] AcceptanceState :> Patch '[JSON] ()
        )
 
@@ -93,11 +93,15 @@ type MainAPI = Auth '[JWT] UserSessionData :> BasicAPI
 
 type LoginAPI = "auth" :> ReqBody '[JSON] AuthData :> Post '[JSON] UserSessionData
 
-type API = (MainAPI :<|> LoginAPI)
+type API = MainAPI
+      :<|> LoginAPI
       :<|> SwaggerSchemaUI "swagger-ui" "swagger.json"
 
 basicApi :: Proxy BasicAPI
 basicApi = Proxy
+
+loginApi :: Proxy LoginAPI
+loginApi = Proxy
 
 mainApi :: Proxy MainAPI
 mainApi = Proxy

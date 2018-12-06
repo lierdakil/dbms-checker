@@ -25,18 +25,18 @@ import Data.Char (isAlphaNum)
 import Control.Exception
 import System.IO.Error
 
-relschemas :: ServerT (BasicCrud "relschemaId" RelSchemaIdentifier) Env
+relschemas :: ServerT (BasicCrud "relschemaId" RelSchemaIdentifier) SessionEnv
 relschemas =
         postRelschemas
    :<|> \relschemaId ->
             getRelschemas relschemaId
        :<|> putRelschemas relschemaId
 
-getRelschemas :: RelSchemaIdentifier -> Env RelSchemaBody
+getRelschemas :: RelSchemaIdentifier -> SessionEnv RelSchemaBody
 getRelschemas erdId = undefined
 
-postRelschemas :: Text -> Env RelSchemaBody
+postRelschemas :: Text -> SessionEnv RelSchemaBody
 postRelschemas = undefined
 
-putRelschemas :: RelSchemaIdentifier -> Text -> Env RelSchemaBody
+putRelschemas :: RelSchemaIdentifier -> Text -> SessionEnv RelSchemaBody
 putRelschemas = undefined

@@ -26,24 +26,24 @@ import Control.Exception
 import System.IO.Error
 
 
-fundeps :: ServerT (BasicCrud "fundepId" FunDepIdentifier) Env
+fundeps :: ServerT (BasicCrud "fundepId" FunDepIdentifier) SessionEnv
 fundeps = postFundeps
    :<|> \fundepId ->
               renderFundeps fundepId
          :<|> getFundeps fundepId
          :<|> putFundeps fundepId
 
-postFundeps :: Text -> Env FunDepBody
+postFundeps :: Text -> SessionEnv FunDepBody
 postFundeps = undefined
 
-putFundeps :: FunDepIdentifier -> Text -> Env FunDepBody
+putFundeps :: FunDepIdentifier -> Text -> SessionEnv FunDepBody
 putFundeps = undefined
 
-patchFundeps :: FunDepIdentifier -> AcceptanceState -> Env ()
+patchFundeps :: FunDepIdentifier -> AcceptanceState -> SessionEnv ()
 patchFundeps = undefined
 
-renderFundeps :: FunDepIdentifier -> Env FileData
+renderFundeps :: FunDepIdentifier -> SessionEnv FileData
 renderFundeps = undefined
 
-getFundeps :: FunDepIdentifier -> Env FunDepBody
+getFundeps :: FunDepIdentifier -> SessionEnv FunDepBody
 getFundeps erdId = undefined

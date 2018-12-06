@@ -8,12 +8,14 @@ import ProjectM36.Atomable
 import DB.TH
 import DB.TypeLists
 import DB.Types
+import Data.UUID
+import Data.Maybe
 
-instance Atomable Word where
-  toAtom = IntegerAtom . fromIntegral
-  fromAtom (IntegerAtom i) = fromIntegral i
+instance Atomable UUID where
+  toAtom = ByteStringAtom . toASCIIBytes
+  fromAtom (ByteStringAtom i) = fromMaybe (error "couldn't parse UUID") $ fromASCIIBytes i
   fromAtom e = error ("improper fromAtom" ++ show e)
-  toAtomType _ = IntegerAtomType
+  toAtomType _ = ByteStringAtomType
   toAddTypeExpr _ = NoOperation
 
 $(mconcat <$> traverse deriveAtomable domains)

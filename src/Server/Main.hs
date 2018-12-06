@@ -20,8 +20,8 @@ import Server.Main.RelSchemas
 import Server.Main.PhysSchemas
 import Server.Main.Comments
 
-mainServer :: ServerT MainAPI Env
-mainServer (Auth.Authenticated UserSessionData{..}) =
+mainServer :: ServerT BasicAPI SessionEnv
+mainServer =
          predefinedTopics
     :<|> customTopics
     :<|> users
@@ -30,4 +30,3 @@ mainServer (Auth.Authenticated UserSessionData{..}) =
     :<|> relschemas
     :<|> sqlschemas
     :<|> comments
-mainServer _ = Auth.throwAll err401

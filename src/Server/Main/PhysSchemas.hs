@@ -26,21 +26,21 @@ import Control.Exception
 import System.IO.Error
 
 
-sqlschemas :: ServerT (BasicCrud "sqlschemaId" PhysSchemaIdentifier) Env
+sqlschemas :: ServerT (BasicCrud "sqlschemaId" PhysSchemaIdentifier) SessionEnv
 sqlschemas = postSqlschemas
    :<|> \sqlSchemaId ->
               patchSqlschemas sqlSchemaId
          :<|> getSqlschemas sqlSchemaId
          :<|> putSqlschemas sqlSchemaId
 
-getSqlschemas :: PhysSchemaIdentifier -> Env PhysSchemaBody
+getSqlschemas :: PhysSchemaIdentifier -> SessionEnv PhysSchemaBody
 getSqlschemas erdId = undefined
 
-postSqlschemas :: Text -> Env PhysSchemaBody
+postSqlschemas :: Text -> SessionEnv PhysSchemaBody
 postSqlschemas = undefined
 
-putSqlschemas :: PhysSchemaIdentifier -> Text -> Env PhysSchemaBody
+putSqlschemas :: PhysSchemaIdentifier -> Text -> SessionEnv PhysSchemaBody
 putSqlschemas = undefined
 
-patchSqlschemas :: PhysSchemaIdentifier -> AcceptanceState -> Env ()
+patchSqlschemas :: PhysSchemaIdentifier -> AcceptanceState -> SessionEnv ()
 patchSqlschemas = undefined

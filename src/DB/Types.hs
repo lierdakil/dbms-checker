@@ -5,18 +5,18 @@ import Data.Text (Text)
 import Data.ByteString (ByteString)
 import Data.Time (UTCTime)
 
-import Data.Word (Word)
+import Data.UUID (UUID)
 
 -- Domains
 
-newtype UserIdentifier = UserIdentifier Word
-newtype PredefinedTopicIdentifier = PredefinedTopicIdentifier Word
-newtype CustomTopicIdentifier = CustomTopicIdentifier Word
-newtype ERDIdentifier = ERDIdentifier Word
-newtype CommentIdentifier = CommentIdentifier Word
-newtype FunDepIdentifier = FunDepIdentifier Word
-newtype RelSchemaIdentifier = RelSchemaIdentifier Word
-newtype PhysSchemaIdentifier = PhysSchemaIdentifier Word
+newtype UserIdentifier = UserIdentifier UUID
+newtype PredefinedTopicIdentifier = PredefinedTopicIdentifier UUID
+newtype CustomTopicIdentifier = CustomTopicIdentifier UUID
+newtype ERDIdentifier = ERDIdentifier UUID
+newtype CommentIdentifier = CommentIdentifier UUID
+newtype FunDepIdentifier = FunDepIdentifier UUID
+newtype RelSchemaIdentifier = RelSchemaIdentifier UUID
+newtype PhysSchemaIdentifier = PhysSchemaIdentifier UUID
 
 data Role = Student | Teacher
 data Group = NoGroup | Group Text
