@@ -55,6 +55,7 @@ dependencies:
 - deepseq
 - exceptions
 - uuid
+- lifted-base
 
 library:
   source-dirs: src
