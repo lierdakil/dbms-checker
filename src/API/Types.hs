@@ -46,27 +46,27 @@ type family BasicCrudResponseBodyInternal (canValidate :: Bool) (canAccept :: Bo
     BasicCrudResponseBodyInternal 'True 'True = BasicCrudResponseBodyWithAcceptanceAndValidation
 
 data BasicCrudResponseBodyWithoutAnything idType = BasicCrudResponseBodyWithoutAnything {
-    id :: idType
-  , description :: Text
+    id :: !idType
+  , description :: !Text
   }
 
 data BasicCrudResponseBodyWithValidation idType = BasicCrudResponseBodyWithValidation {
-    id :: idType
-  , description :: Text
-  , validationErrors :: [Text]
+    id :: !idType
+  , description :: !Text
+  , validationErrors :: ![Text]
   }
 
 data BasicCrudResponseBodyWithAcceptance idType = BasicCrudResponseBodyWithAcceptance {
-    id :: idType
-  , description :: Text
-  , accepted :: AcceptanceState
+    id :: !idType
+  , description :: !Text
+  , accepted :: !AcceptanceState
   }
 
 data BasicCrudResponseBodyWithAcceptanceAndValidation idType = BasicCrudResponseBodyWithAcceptanceAndValidation {
-    id :: idType
-  , description :: Text
-  , validationErrors :: [Text]
-  , accepted :: AcceptanceState
+    id :: !idType
+  , description :: !Text
+  , validationErrors :: ![Text]
+  , accepted :: !AcceptanceState
   }
 
 type family Identifier a
