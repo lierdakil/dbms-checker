@@ -7,6 +7,12 @@ interface State {
   fundeps: Partial<BasicCrudResponseBodyWithValidation<string>> | null
   img: string | null
   initialized: boolean
+  lastError:
+    | Error & {
+        code?: number
+        details?: string
+      }
+    | null
 }
 
 export class FunDeps extends React.Component<{}, State> {
@@ -18,6 +24,7 @@ export class FunDeps extends React.Component<{}, State> {
       fundeps: null,
       img: null,
       initialized: false,
+      lastError: null,
     }
     this.init()
   }
@@ -28,7 +35,6 @@ export class FunDeps extends React.Component<{}, State> {
     const { fundeps, img } = this.state
     return (
       <>
-        {img ? <Image src={img} /> : null}
         <form onSubmit={this.handleSubmit}>
           <div>
             <label>
@@ -66,6 +72,21 @@ export class FunDeps extends React.Component<{}, State> {
             </Button>
           </div>
         </form>
+        {this.state.lastError ? (
+          <>
+            <Button onClick={this.dismissError}>
+              <Glyphicon glyph="cancel" />
+            </Button>
+            <pre style={{ backgroundColor: '#ffdddd' }}>
+              {this.state.lastError.details || this.state.lastError.message}
+            </pre>
+          </>
+        ) : null}
+        {img ? (
+          <div style={{ overflowX: 'auto' }}>
+            <Image src={img} />
+          </div>
+        ) : null}
       </>
     )
   }
@@ -77,9 +98,14 @@ export class FunDeps extends React.Component<{}, State> {
     })
     clearTimeout(this.timeout)
     this.timeout = window.setTimeout(async () => {
-      this.setState({
-        img: URL.createObjectURL(await api.postFunDepRender(description)),
-      })
+      try {
+        this.setState({
+          img: URL.createObjectURL(await api.postFunDepRender(description)),
+          lastError: null,
+        })
+      } catch (e) {
+        this.setState({ lastError: e, img: null })
+      }
     }, 500)
   }
 
@@ -107,9 +133,13 @@ export class FunDeps extends React.Component<{}, State> {
       const img = fundeps
         ? URL.createObjectURL(await api.postFunDepRender(fundeps.description))
         : null
-      this.setState({ img })
+      this.setState({ img, lastError: null })
     } catch (e) {
-      console.error(e)
+      this.setState({ lastError: e, img: null })
     }
+  }
+
+  private dismissError() {
+    this.setState({ lastError: null })
   }
 }
