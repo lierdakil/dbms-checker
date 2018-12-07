@@ -133,7 +133,7 @@ export async function postERDRender(desc: string): Promise<Blob> {
   return request(`/render/erd`, 'POST', desc, 'blob')
 }
 export async function postFunDepRender(desc: string): Promise<Blob> {
-  return request(`/render/fundeps`, 'POST', desc, 'blob')
+  return request(`/render/fundep`, 'POST', desc, 'blob')
 }
 
 export async function patchERD(
