@@ -4,7 +4,7 @@ module API.Types where
 
 import Data.Text (Text)
 
-import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as B
 import qualified Data.Text as T
 import qualified Data.Map as M
 import Data.List (foldl')
@@ -32,7 +32,7 @@ data AssignedTopicInfo =
     AssignedTopicInfoPredefined PredefinedTopic
   | AssignedTopicInfoCustom CustomTopic
 
-newtype FileData = FileData { unFileData :: BL.ByteString }
+newtype FileData = FileData { unFileData :: B.ByteString }
 
 type family CanValidate (idType :: *) where
   CanValidate FunDepIdentifier = 'True

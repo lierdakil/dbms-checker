@@ -10,7 +10,6 @@ import Config
 import API
 import API.Types
 import Servant
-import Data.Text
 
 import qualified Servant.Auth.Server as Auth
 import Server.Main.PredefinedTopics
@@ -21,6 +20,7 @@ import Server.Main.FunDeps
 import Server.Main.RelSchemas
 import Server.Main.PhysSchemas
 import Server.Main.Comments
+import Server.Main.Render
 
 mainServer :: ServerT BasicAPI SessionEnv
 mainServer =
@@ -33,8 +33,3 @@ mainServer =
     :<|> sqlschemas
     :<|> comments
     :<|> render
-
-render :: Text -> Text -> SessionEnv FileData
-render "erd" src = undefined
-render "fundep" src = undefined
-render _ _ = throwError err404

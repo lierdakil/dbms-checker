@@ -62,6 +62,7 @@ library:
   source-dirs: src
   dependencies:
   - template-haskell
+  - graphviz
 
 executables:
   dbms-checker-server:
