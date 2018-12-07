@@ -25,8 +25,7 @@ erd = postErd
   :<|> erdManip
   where
     erdManip erdId =
-              renderErd erdId
-         :<|> patchErd erdId
+              patchErd erdId
          :<|> getErd erdId
          :<|> putErd erdId
 
@@ -72,6 +71,3 @@ patchErd erdid st = bracketDB $ do
   when (userRole /= Teacher) $ throwError err403
   execDB [tutdctx|update ERDiagram where id = $erdid ( accepted := $st )|]
   commitDB
-
-renderErd :: ERDIdentifier -> SessionEnv FileData
-renderErd = undefined

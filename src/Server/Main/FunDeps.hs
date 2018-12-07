@@ -29,8 +29,7 @@ import System.IO.Error
 fundeps :: ServerT (BasicCrud "fundepId" FunDepIdentifier) SessionEnv
 fundeps = postFundeps
    :<|> \fundepId ->
-              renderFundeps fundepId
-         :<|> getFundeps fundepId
+              getFundeps fundepId
          :<|> putFundeps fundepId
 
 postFundeps :: Text -> SessionEnv FunDepBody
@@ -41,9 +40,6 @@ putFundeps = undefined
 
 patchFundeps :: FunDepIdentifier -> AcceptanceState -> SessionEnv ()
 patchFundeps = undefined
-
-renderFundeps :: FunDepIdentifier -> SessionEnv FileData
-renderFundeps = undefined
 
 getFundeps :: FunDepIdentifier -> SessionEnv FunDepBody
 getFundeps erdId = undefined

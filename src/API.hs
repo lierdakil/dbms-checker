@@ -57,6 +57,8 @@ type BasicAPI =
   :<|> "relschemas" :> BasicCrud "relschemaId" RelSchemaIdentifier
   :<|> "sqlschemas" :> BasicCrud "sqlschemaId" PhysSchemaIdentifier
   :<|> "comments" :> CommentsAPI
+  :<|> "render" :> Capture "type" Text
+                :> ReqBody '[JSON] Text :> Post '[OctetStream] FileData
 
 type BasicGet (idType :: *) =
        Get '[JSON] (Maybe (BasicCrudResponseBody idType))
@@ -65,24 +67,11 @@ type BasicCrud (idName :: Symbol) (idType :: *) =
        ReqBody '[JSON] Text :> Post '[JSON] (BasicCrudResponseBody idType)
   :<|> Capture idName idType :> BasicManip idType
 
-type family CanRender  (idType :: *) where
-  CanRender ERDIdentifier = 'True
-  CanRender FunDepIdentifier = 'True
-  CanRender idType = 'False
-
 type BasicManip (idType :: *) =
-    ExtendWithRender idType (
-      ExtendWithAccept idType (
-        Get '[JSON] (BasicCrudResponseBody idType)
-   :<|> ReqBody '[JSON] Text :> Put '[JSON] (BasicCrudResponseBody idType)
-      )
+    ExtendWithAccept idType (
+      Get '[JSON] (BasicCrudResponseBody idType)
+ :<|> ReqBody '[JSON] Text :> Put '[JSON] (BasicCrudResponseBody idType)
     )
-
-type ExtendWithRender (idType :: *) (a :: *) = ExtendWithRenderInternal (CanRender idType) a
-
-type family ExtendWithRenderInternal (canRender :: Bool) (a :: *) where
-  ExtendWithRenderInternal 'True a = "render" :> Get '[OctetStream] FileData :<|> a
-  ExtendWithRenderInternal 'False a = a
 
 type ExtendWithAccept (idType :: *) (a :: *) = ExtendWithAcceptInternal (CanAccept idType) a
 

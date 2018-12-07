@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main where
 
@@ -9,6 +10,7 @@ import Config
 import API
 import API.Types
 import Servant
+import Data.Text
 
 import qualified Servant.Auth.Server as Auth
 import Server.Main.PredefinedTopics
@@ -30,3 +32,9 @@ mainServer =
     :<|> relschemas
     :<|> sqlschemas
     :<|> comments
+    :<|> render
+
+render :: Text -> Text -> SessionEnv FileData
+render "erd" src = undefined
+render "fundep" src = undefined
+render _ _ = throwError err404
