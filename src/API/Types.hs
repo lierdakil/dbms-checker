@@ -98,20 +98,20 @@ instance HasResponseBody FunctionalDependencies where
   toResponseBody FunctionalDependencies{..} = BasicCrudResponseBodyWithValidation {
       id = id
     , description = funDeps
-    , validationErrors = []
+    , validationErrors = validationErrors
     }
 instance HasResponseBody RelationalSchema where
   toResponseBody RelationalSchema{..} = BasicCrudResponseBodyWithValidation {
       id = id
     , description = relations
-    , validationErrors = []
+    , validationErrors = validationErrors
     }
 instance HasResponseBody PhysicalSchema where
   toResponseBody PhysicalSchema{..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
       id = id
     , description = schemaSQL
     , accepted = accepted
-    , validationErrors = []
+    , validationErrors = validationErrors
     }
 
 data UserInfo = UserInfo {

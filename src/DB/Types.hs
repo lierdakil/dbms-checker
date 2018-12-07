@@ -95,12 +95,14 @@ data FunctionalDependencies = FunctionalDependencies {
     id :: !FunDepIdentifier
   , userId :: !UserIdentifier
   , funDeps :: !Text
+  , validationErrors :: ![Text]
   }
 
 data RelationalSchema = RelationalSchema {
     id :: !RelSchemaIdentifier
   , userId :: !UserIdentifier
   , relations :: !Text
+  , validationErrors :: ![Text]
   }
 
 data PhysicalSchema = PhysicalSchema {
@@ -108,6 +110,7 @@ data PhysicalSchema = PhysicalSchema {
   , userId :: !UserIdentifier
   , schemaSQL :: !Text
   , accepted :: !AcceptanceState
+  , validationErrors :: ![Text]
   }
 
 -- Helper join types
