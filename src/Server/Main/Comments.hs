@@ -29,7 +29,7 @@ comments = postComment
        :<|> patchComment commentId
 
 postComment :: CommentBodyInfo -> SessionEnv CommentInfo
-postComment CommentBodyInfo{..} = do
+postComment CommentBodyInfo{..} = bracketDB $ do
   userInfo@UserInfo{..} <- asks (userSessionUserInfo . sessionData)
   when (userInfoUserRole /= Teacher) $ checkItemOwnership parentItem
   nid <- getNewId CommentIdentifier
@@ -55,7 +55,7 @@ postComment CommentBodyInfo{..} = do
     }
 
 getComments :: Maybe ParentItemIdentifier -> SessionEnv [CommentInfo]
-getComments Nothing = do
+getComments Nothing = bracketDB $ do
   userRole <- asks (userSessionUserRole . sessionData)
   when (userRole /= Teacher) $ throwError err403
   (rels :: [CommentWithUserInfo]) <-
@@ -63,7 +63,7 @@ getComments Nothing = do
       (User rename {id as commentAuthor, username as authorUsername
       , group as authorGroup, role as authorRole})|]
   return $ toResponseBody rels
-getComments (Just parentItem) = do
+getComments (Just parentItem) = bracketDB $ do
   role <- asks (userSessionUserRole . sessionData)
   when (role /= Teacher) $ checkItemOwnership parentItem
   (rels :: [CommentWithUserInfo]) <-
@@ -73,7 +73,7 @@ getComments (Just parentItem) = do
   return $ toResponseBody rels
 
 putComment :: CommentIdentifier -> CommentBodyInfo -> SessionEnv CommentInfo
-putComment cid CommentBodyInfo{..} = do
+putComment cid CommentBodyInfo{..} = bracketDB $ do
   userInfo@UserInfo{..} <- asks (userSessionUserInfo . sessionData)
   when (userInfoUserRole /= Teacher) $ checkItemOwnership parentItem
   execDB [tutdctx|update Comment where commentAuthor = $userInfoUserId and id = $cid (
@@ -94,12 +94,12 @@ putComment cid CommentBodyInfo{..} = do
     }
 
 patchComment :: CommentIdentifier -> CommentStatus -> SessionEnv ()
-patchComment cid st = do
+patchComment cid st = bracketDB $ do
   uId <- asks (userSessionUserId . sessionData)
   execDB [tutdctx|update Comment where commentAuthor = $uId and id = $cid (commentStatus := $st)|]
   commitDB
 
-checkItemOwnership :: ParentItemIdentifier -> SessionEnv ()
+checkItemOwnership :: ParentItemIdentifier -> DBContextT SessionEnv ()
 checkItemOwnership parent = do
   -- check if user owns the parent item in question
   uId <- asks (userSessionUserId . sessionData)

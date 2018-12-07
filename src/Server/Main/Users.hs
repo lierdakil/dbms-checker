@@ -1,29 +1,26 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main.Users where
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LT
-import qualified Data.Set as S
 import Control.Monad.Reader
 import Config
 import API
 import API.Types
 import DB.Types
 import Servant
-import Control.Monad.Error.Class
-import Data.Monoid ((<>))
-import Crypto.Hash (hash, Digest, SHA1)
-import Data.Char (isAlphaNum)
-import Control.Exception
-import System.IO.Error
+import DB.Instances ()
+import DB.Accessor
+import DB.Utils
+import TutorialD.QQ
+import Data.UUID hiding (null)
+import Data.ByteString.Lazy (fromStrict)
 
 users :: ServerT UsersAPI SessionEnv
 users userId =
@@ -34,20 +31,79 @@ users userId =
    :<|> getUsersRelSchema userId
    :<|> getUsersSqlSchema userId
 
-getUsersTopic :: UserIdentifier -> SessionEnv AssignedTopicInfo
-getUsersTopic userId = undefined
+getUsersTopic :: UserIdentifier -> SessionEnv (Maybe AssignedTopicInfo)
+getUsersTopic = bracketDB . getUsersTopicInternal
+
+getUsersTopicInternal :: UserIdentifier -> DBContextT SessionEnv (Maybe AssignedTopicInfo)
+getUsersTopicInternal userId = do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  when (role /= Teacher && uId /= userId) $ throwError err403
+  (tas :: [TopicAssignment]) <- fromRelation =<< execDB [tutdrel|TopicAssignment where userId = $userId|]
+  if (null tas)
+  then return Nothing
+  else Just <$> getAssignedTopicInfo (topic $ head tas)
+  where
+    getAssignedTopicInfo (PredefinedAssignedTopic tid) = do
+      (topic :: [PredefinedTopic]) <- fromRelation=<<execDB [tutdrel|PredefinedTopic where id = $tid|]
+      when (null topic) $ throwError err404{errBody = "No topic with id" <> fromStrict ((\(PredefinedTopicIdentifier u) -> toASCIIBytes u) tid)}
+      return $ AssignedTopicInfoPredefined $ head topic
+    getAssignedTopicInfo (CustomAssignedTopic tid) = do
+      (topic :: [CustomTopic]) <- fromRelation=<<execDB [tutdrel|CustomTopic where id = $tid|]
+      when (null topic) $ throwError err404{errBody = "No custom topic with id" <> fromStrict ((\(CustomTopicIdentifier u) -> toASCIIBytes u) tid)}
+      return $ AssignedTopicInfoCustom $ head topic
+
 
 patchUsersTopic :: UserIdentifier -> AssignedTopic -> SessionEnv AssignedTopicInfo
-patchUsersTopic userId assignedTopic = undefined
+patchUsersTopic userId assignedTopic = bracketDB $ do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  when (role /= Teacher && uId /= userId) $ throwError err403
+  let ta = TopicAssignment { userId = userId, topic = assignedTopic }
+  execDB [tutdctx|TopicAssignment := (TopicAssignment where not userId = $userId) union $ta|]
+  topic <- getUsersTopicInternal userId
+  res <- case topic of
+    Nothing -> throwError err404{errBody = "Did not find the freshly inserted assignment"}
+    Just (AssignedTopicInfoCustom t@CustomTopic{..}) -> do
+      when (topicAuthor /= userId) $ throwError err400
+      return $ AssignedTopicInfoCustom t
+    Just t -> return t
+  commitDB
+  return res
 
-getUsersErd :: UserIdentifier -> SessionEnv ERDBody
-getUsersErd userId = undefined
+getUsersErd :: UserIdentifier -> SessionEnv (Maybe ERDBody)
+getUsersErd userId = bracketDB $ do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  when (role /= Teacher && uId /= userId) $ throwError err403
+  (rel :: [ERDiagram]) <- fromRelation =<< execDB [tutdrel|ERDiagram where userId = $userId|]
+  if (null rel)
+  then return Nothing
+  else return $ Just $ toResponseBody $ head rel
 
-getUsersFundep :: UserIdentifier -> SessionEnv FunDepBody
-getUsersFundep userId = undefined
+getUsersFundep :: UserIdentifier -> SessionEnv (Maybe FunDepBody)
+getUsersFundep userId = bracketDB $ do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  when (role /= Teacher && uId /= userId) $ throwError err403
+  (rel :: [FunctionalDependencies]) <-
+    fromRelation =<< execDB [tutdrel|FunctionalDependencies where userId = $userId|]
+  if (null rel)
+  then return Nothing
+  else return $ Just $ toResponseBody $ head rel
 
-getUsersRelSchema :: UserIdentifier -> SessionEnv RelSchemaBody
-getUsersRelSchema userId = undefined
+getUsersRelSchema :: UserIdentifier -> SessionEnv (Maybe RelSchemaBody)
+getUsersRelSchema userId = bracketDB $ do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  when (role /= Teacher && uId /= userId) $ throwError err403
+  (rel :: [RelationalSchema]) <-
+    fromRelation =<< execDB [tutdrel|RelationalSchema where userId = $userId|]
+  if (null rel)
+  then return Nothing
+  else return $ Just $ toResponseBody $ head rel
 
-getUsersSqlSchema :: UserIdentifier -> SessionEnv PhysSchemaBody
-getUsersSqlSchema userId = undefined
+getUsersSqlSchema :: UserIdentifier -> SessionEnv (Maybe PhysSchemaBody)
+getUsersSqlSchema userId = bracketDB $ do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  when (role /= Teacher && uId /= userId) $ throwError err403
+  (rel :: [PhysicalSchema]) <-
+    fromRelation =<< execDB [tutdrel|PhysicalSchema where userId = $userId|]
+  if (null rel)
+  then return Nothing
+  else return $ Just $ toResponseBody $ head rel

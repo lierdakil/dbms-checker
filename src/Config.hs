@@ -10,7 +10,6 @@ module Config (
   , SessionEnv(..)
   , Config(..)
   , Session(..)
-  , HasDBConfig(..)
   , ntEnv
   , ntSessionEnv
   ) where
@@ -25,21 +24,6 @@ import Data.Time
 import ProjectM36.Client (Connection, SessionId)
 
 import API.Types
-
-class HasDBConfig (m :: * -> *) where
-  getDBConfig :: m (Connection, SessionId)
-
-instance HasDBConfig Env where
-  getDBConfig = do
-    conn <- asks configDBConnection
-    sid <- asks configDBSession
-    return (conn, sid)
-
-instance HasDBConfig SessionEnv where
-  getDBConfig = do
-    conn <- asks (configDBConnection . sessionConfig)
-    sid <- asks (configDBSession . sessionConfig)
-    return (conn, sid)
 
 newtype Env a = Env {
     runEnv :: ReaderT Config (ExceptT ServantErr IO) a
@@ -59,9 +43,7 @@ data Session = Session {
   }
 
 data Config = Config {
-    configDBConnection :: !Connection
-  , configDBSession  :: !SessionId
-  , configPort       :: !Int
+    configPort       :: !Int
   , configOrigins    :: !(Maybe [String])
   , configSessionDur :: !NominalDiffTime
   }

@@ -13,7 +13,8 @@ import DB.Types
 import DB.Instances ()
 
 data UserSessionData = UserSessionData {
-    userSessionUserInfo :: UserInfo
+    userSessionUserInfo :: !UserInfo
+  , userSessionKey :: !String
 }
 
 userSessionUserId :: UserSessionData -> UserIdentifier

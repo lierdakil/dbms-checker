@@ -16,19 +16,9 @@ import System.IO.Error
 
 main :: IO ()
 main = do
-  let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []
-      eCheck v = do
-        x <- v
-        case x of
-          Left err -> error (show err)
-          Right x' -> pure x'
-  conn <- eCheck $ connectProjectM36 connInfo
-  sessionId <- eCheck $ createSessionAtHead conn "master"
   env <- getEnvironment
   let cfg = Config {
-    configDBConnection = conn
-  , configDBSession    = sessionId
-  , configPort       = fromMaybe 8081 (read <$> lookup "DBMS_CHECKER_PORT" env)
+    configPort       = fromMaybe 8081 (read <$> lookup "DBMS_CHECKER_PORT" env)
   , configOrigins    = words <$> lookup "DBMS_CHECKER_ORIGINS" env
   , configSessionDur = nominalDay * fromIntegral (fromMaybe (7 :: Word) (read <$> lookup "DBMS_SESSION_EXPIRATION_DAYS" env))
   }

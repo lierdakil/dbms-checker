@@ -20,7 +20,6 @@ import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
 
-
 erd :: ServerT (BasicCrud "erdId" ERDIdentifier) SessionEnv
 erd = postErd
   :<|> erdManip
@@ -32,7 +31,7 @@ erd = postErd
          :<|> putErd erdId
 
 getErd :: ERDIdentifier -> SessionEnv ERDBody
-getErd erdId = do
+getErd erdId = bracketDB $ do
   (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
   let request Student = [tutdrel|ERDiagram where id = $erdId and userId = $uId|]
       request Teacher = [tutdrel|ERDiagram where id = $erdId|]
@@ -41,7 +40,7 @@ getErd erdId = do
   return $ toResponseBody $ head erds
 
 postErd :: Text -> SessionEnv ERDBody
-postErd desc = do
+postErd desc = bracketDB $ do
   nid <- getNewId ERDIdentifier
   uId <- asks (userSessionUserId . sessionData)
   let erdiag = ERDiagram {
@@ -55,7 +54,7 @@ postErd desc = do
   return $ toResponseBody erdiag
 
 putErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
-putErd erdid desc = do
+putErd erdid desc = bracketDB $ do
   uId <- asks (userSessionUserId . sessionData)
   execDB [tutdctx|update ERDiagram where id = $erdid and userId = $uId (
     diagram := $desc, accepted := NotAccepted )|]
@@ -68,7 +67,7 @@ putErd erdid desc = do
     }
 
 patchErd :: ERDIdentifier -> AcceptanceState -> SessionEnv ()
-patchErd erdid st = do
+patchErd erdid st = bracketDB $ do
   userRole <- asks (userSessionUserRole . sessionData)
   when (userRole /= Teacher) $ throwError err403
   execDB [tutdctx|update ERDiagram where id = $erdid ( accepted := $st )|]

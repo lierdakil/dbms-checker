@@ -9,8 +9,10 @@ import Config
 import Server.Main
 import Server.Login
 import Server.Swagger
+import Server.Static
 import Servant.Swagger.UI
 import Servant.Auth.Server as Auth
+import ProjectM36.Client
 
 authServer :: Config -> AuthResult UserSessionData -> Server BasicAPI
 authServer cfg (Auth.Authenticated sess) =
@@ -19,8 +21,9 @@ authServer _ _ = throwAll err401
 
 server :: JWTSettings -> Config -> Server API
 server jwt cfg = authServer cfg
-  :<|> hoistServerWithContext loginApi context (ntEnv cfg) (loginServer jwt)
-  :<|> swaggerSchemaUIServer swaggerDoc
+    :<|> hoistServerWithContext loginApi context (ntEnv cfg) (loginServer jwt)
+    :<|> swaggerSchemaUIServer swaggerDoc
+    :<|> staticServer
 
 context :: Proxy '[CookieSettings, JWTSettings]
 context = Proxy

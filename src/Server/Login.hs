@@ -31,17 +31,19 @@ loginServer = checkCreds
 
 checkCreds :: JWTSettings
            -> AuthData
-           -> Env String
-checkCreds jwtCfg AuthData{..} = do
+           -> Env UserSessionData
+checkCreds jwtCfg AuthData{..} = bracketDB $ do
   (rel :: [User]) <- fromRelation =<< execDB [tutdrel|User where username = $authLogin|]
   when (null rel) $ throwError err401
-  let User{id=id', role, saltedPasswordHash} = head rel
+  let User{saltedPasswordHash} = head rel
   let bspw = BL8.toStrict $ LTE.encodeUtf8 $ LT.fromStrict authPassword
       bshs = saltedPasswordHash
   when (not $ validatePassword bspw bshs) $ throwError err401
   let usr = UserSessionData {
         userSessionUserInfo = toResponseBody $ head rel
-        }
+      , userSessionKey = ""
+      }
   sd <- asks configSessionDur
   expirationDateTime <- Just . addUTCTime sd <$> liftIO getCurrentTime
-  BL8.unpack <$> (handle =<< liftIO (makeJWT usr jwtCfg expirationDateTime))
+  key <- BL8.unpack <$> (handle =<< liftIO (makeJWT usr jwtCfg expirationDateTime))
+  return usr {userSessionKey = key}

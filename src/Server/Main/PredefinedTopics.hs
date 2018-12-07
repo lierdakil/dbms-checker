@@ -13,4 +13,4 @@ import DB.Accessor
 import TutorialD.QQ
 
 predefinedTopics :: SessionEnv [PredefinedTopic]
-predefinedTopics = fromRelation =<< execDBRel [tutdrel|PredefinedTopic|]
+predefinedTopics = bracketDB $ fromRelation =<< execDBRel [tutdrel|PredefinedTopic|]

@@ -31,7 +31,7 @@ type CustomTopicsAPI =
 type UsersAPI =
   Capture "userId" UserIdentifier :> (
        "topic" :> (
-              Get '[JSON] AssignedTopicInfo
+              Get '[JSON] (Maybe AssignedTopicInfo)
          :<|> ReqBody '[JSON] AssignedTopic :> Put '[JSON] AssignedTopicInfo
          )
   :<|> "erd" :> BasicGet ERDIdentifier
@@ -59,7 +59,7 @@ type BasicAPI =
   :<|> "comments" :> CommentsAPI
 
 type BasicGet (idType :: *) =
-       Get '[JSON] (BasicCrudResponseBody idType)
+       Get '[JSON] (Maybe (BasicCrudResponseBody idType))
 
 type BasicCrud (idName :: Symbol) (idType :: *) =
        ReqBody '[JSON] Text :> Post '[JSON] (BasicCrudResponseBody idType)
@@ -92,11 +92,12 @@ type family ExtendWithAcceptInternal (canAccept :: Bool) (a :: *) where
 
 type MainAPI = Auth '[JWT] UserSessionData :> BasicAPI
 
-type LoginAPI = "auth" :> ReqBody '[JSON] AuthData :> Post '[JSON] String
+type LoginAPI = "auth" :> ReqBody '[JSON] AuthData :> Post '[JSON] UserSessionData
 
 type API = MainAPI
       :<|> LoginAPI
       :<|> SwaggerSchemaUI "swagger-ui" "swagger.json"
+      :<|> Raw
 
 basicApi :: Proxy BasicAPI
 basicApi = Proxy
