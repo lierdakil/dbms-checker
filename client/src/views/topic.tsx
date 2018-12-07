@@ -73,21 +73,24 @@ export class Topic extends React.Component<{}, State> {
                 onChange={this.handleCustomTopicChange}
               />
             </label>
-            {topic.contents.accepted === 'Accepted' ? (
-              <OverlayTrigger
-                placement="top"
-                overlay={<Tooltip>Тема принята</Tooltip>}
-              >
-                <Glyphicon glyph="ok" color="green" />
-              </OverlayTrigger>
-            ) : (
-              <OverlayTrigger
-                placement="top"
-                overlay={<Tooltip>Тема пока не принята</Tooltip>}
-              >
-                <Glyphicon glyph="remove" color="darkyellow" />
-              </OverlayTrigger>
-            )}
+            {this.state.userTopicSaved &&
+            this.state.userTopicSaved.tag === 'AssignedTopicInfoCustom' ? (
+              topic.contents.accepted === 'Accepted' ? (
+                <OverlayTrigger
+                  placement="top"
+                  overlay={<Tooltip>Тема принята</Tooltip>}
+                >
+                  <Glyphicon glyph="ok" color="green" />
+                </OverlayTrigger>
+              ) : (
+                <OverlayTrigger
+                  placement="top"
+                  overlay={<Tooltip>Тема пока не принята</Tooltip>}
+                >
+                  <Glyphicon glyph="remove" color="darkyellow" />
+                </OverlayTrigger>
+              )
+            ) : null}
           </div>
         ) : (
           <div />

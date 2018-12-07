@@ -60,22 +60,24 @@ export class SqlSchema extends React.Component<{}, State> {
               )}
             </div>
           ) : null}
-          <div>
-            <label>
-              Статус решения:
-              {sqlschema && sqlschema.accepted === 'Accepted' ? (
-                <>
-                  Зачтено
-                  <Glyphicon glyph="ok" color="green" />
-                </>
-              ) : (
-                <>
-                  Проверяется
-                  <Glyphicon glyph="remove" color="darkyellow" />
-                </>
-              )}
-            </label>
-          </div>
+          {sqlschema && sqlschema.id ? (
+            <div>
+              <label>
+                Статус решения:
+                {sqlschema.accepted === 'Accepted' ? (
+                  <>
+                    Зачтено
+                    <Glyphicon glyph="ok" color="green" />
+                  </>
+                ) : (
+                  <>
+                    Проверяется
+                    <Glyphicon glyph="remove" color="darkyellow" />
+                  </>
+                )}
+              </label>
+            </div>
+          ) : null}
           <div>
             <Button bsStyle="primary" type="submit">
               Сохранить
