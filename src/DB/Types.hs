@@ -109,3 +109,15 @@ data PhysicalSchema = PhysicalSchema {
   , schemaSQL :: !Text
   , accepted :: !AcceptanceState
   }
+
+-- Helper join types
+
+data CommentWithUserInfo = CommentWithUserInfo {
+    id :: !CommentIdentifier
+  , parentItem :: !ParentItemIdentifier
+  , parentComment :: !ParentComment
+  , commentAuthor :: !User
+  , commentPrio :: !CommentPriority
+  , commentText :: !Text
+  , commentStatus :: !CommentStatus
+  }

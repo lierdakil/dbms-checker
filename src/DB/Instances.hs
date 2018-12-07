@@ -18,6 +18,9 @@ instance Atomable UUID where
   toAtomType _ = ByteStringAtomType
   toAddTypeExpr _ = NoOperation
 
-$(mconcat <$> traverse deriveAtomable domains)
+deriving instance Ord CommentIdentifier
+deriving instance Ord ParentComment
 
-$(mconcat <$> traverse deriveTupleable DB.TypeLists.relations)
+$(mconcat <$> traverse deriveGeneric (domains <> DB.TypeLists.relations <> joins))
+$(mconcat <$> traverse deriveAtomable (''User : domains))
+$(mconcat <$> traverse deriveTupleable (DB.TypeLists.relations <> joins))

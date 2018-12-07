@@ -1,18 +1,26 @@
 {-# LANGUAGE DuplicateRecordFields, TypeFamilies, DataKinds, RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances, NamedFieldPuns #-}
 module API.Types where
 
 import Data.Text (Text)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
+import qualified Data.Map as M
+import Data.List (foldl')
 
 import DB.Types
+import DB.Instances ()
 
 data UserSessionData = UserSessionData {
-    userSessionUserId :: UserIdentifier
-  , userSessionUserName :: T.Text
-  , userSessionUserRole :: Role
+    userSessionUserInfo :: UserInfo
 }
+
+userSessionUserId :: UserSessionData -> UserIdentifier
+userSessionUserId = userInfoUserId . userSessionUserInfo
+
+userSessionUserRole :: UserSessionData -> Role
+userSessionUserRole = userInfoUserRole . userSessionUserInfo
 
 data AuthData = AuthData {
     authLogin :: T.Text
@@ -76,7 +84,9 @@ type instance Identifier RelationalSchema = RelSchemaIdentifier
 type instance Identifier PhysicalSchema = PhysSchemaIdentifier
 
 class HasResponseBody a where
-  toResponseBody :: a -> BasicCrudResponseBody (Identifier a)
+  type family ResponseBody a
+  type ResponseBody a = BasicCrudResponseBody (Identifier a)
+  toResponseBody :: a -> ResponseBody a
 
 instance HasResponseBody ERDiagram where
   toResponseBody ERDiagram{..} = BasicCrudResponseBodyWithAcceptance {
@@ -114,22 +124,50 @@ data UserInfo = UserInfo {
 data CommentInfo = CommentInfo {
     id :: CommentIdentifier
   , parentItem :: ParentItemIdentifier
-  , parentComment :: ParentComment
+  , childrenComments :: [CommentInfo]
   , commentAuthor :: UserInfo
   , commentPrio :: CommentPriority
   , commentText :: Text
   , commentStatus :: CommentStatus
   }
 
+instance HasResponseBody User where
+  type instance ResponseBody User = UserInfo
+  toResponseBody User{..} = UserInfo {
+      userInfoUserId = id
+    , userInfoUserRole = role
+    , userInfoUsername = username
+    , userInfoUserGroup = group
+    }
+
+instance HasResponseBody [CommentWithUserInfo] where
+  type instance ResponseBody [CommentWithUserInfo] = [CommentInfo]
+  toResponseBody comments = buildForest NoParentComment
+    where
+      parentMap :: M.Map ParentComment [CommentWithUserInfo]
+      parentMap = foldl' foldf M.empty comments
+      foldf acc x@(CommentWithUserInfo{parentComment}) = M.insertWith (<>) parentComment [x] acc
+      buildForest parent = maybe [] (map toCommentInfo) $ M.lookup parent parentMap
+      toCommentInfo x@CommentWithUserInfo{id=id'} =
+        (toResponseBody x){childrenComments = buildForest $ ParentComment id'}
+
+instance HasResponseBody CommentWithUserInfo where
+  type instance ResponseBody CommentWithUserInfo = CommentInfo
+  toResponseBody CommentWithUserInfo{..} = CommentInfo {
+          id = id
+        , parentItem = parentItem
+        , commentAuthor = toResponseBody commentAuthor
+        , childrenComments = []
+        , commentPrio = commentPrio
+        , commentText = commentText
+        , commentStatus = commentStatus
+        }
+
 data CommentBodyInfo = CommentBodyInfo {
     parentItem :: ParentItemIdentifier
   , parentComment :: ParentComment
   , commentPrio :: CommentPriority
   , commentText :: Text
-  }
-
-data CommentStatusInfo = CommentStatusInfo {
-    commentStatus :: CommentStatus
   }
 
 type ERDBody = BasicCrudResponseBodyWithAcceptance ERDIdentifier

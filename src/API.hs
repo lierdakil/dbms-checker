@@ -45,7 +45,7 @@ type CommentsAPI =
   :<|> QueryParam "parentItem" ParentItemIdentifier :> Get '[JSON] [CommentInfo]
   :<|> Capture "commentId" CommentIdentifier :> (
             ReqBody '[JSON] CommentBodyInfo :> Put '[JSON] CommentInfo
-       :<|> ReqBody '[JSON] CommentStatusInfo :> Patch '[JSON] ()
+       :<|> ReqBody '[JSON] CommentStatus :> Patch '[JSON] ()
        )
 
 type BasicAPI =

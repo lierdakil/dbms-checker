@@ -12,9 +12,11 @@ import Data.Proxy
 
 deriveToSchema :: Name -> Q [Dec]
 deriveToSchema t = let typ = return $ ConT t in do
-  d1 <- [d|deriving instance Generic $typ|]
-  d2 <- [d|instance ToSchema $typ|]
-  return $ d1 <> d2
+  [d|instance ToSchema $typ|]
+
+deriveGeneric :: Name -> Q [Dec]
+deriveGeneric t = let typ = return $ ConT t in do
+  [d|deriving instance Generic $typ|]
 
 deriveToParamSchema :: Name -> Q [Dec]
 deriveToParamSchema t = let typ = return $ ConT t in [d|instance ToParamSchema $typ|]

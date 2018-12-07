@@ -31,10 +31,8 @@ instance ToJWT UserSessionData
 
 $(mconcat <$> traverse deriveJSONOnly jsonOnlyTypes)
 
-deriving instance Generic ParentComment
 instance ToSchema ParentComment where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
-deriving instance Generic Group
 instance ToSchema Group where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
@@ -47,6 +45,14 @@ instance (ToSchema a) => ToSchema (BasicCrudResponseBodyWithValidation a)
 instance (ToSchema a) => ToSchema (BasicCrudResponseBodyWithAcceptance a)
 instance (ToSchema a) => ToSchema (BasicCrudResponseBodyWithAcceptanceAndValidation a)
 
+$(mconcat <$> traverse deriveGeneric [
+    ''CommentBodyInfo
+  , ''CommentInfo
+  , ''AssignedTopicInfo
+  , ''UserSessionData
+  , ''AuthData
+  , ''UserInfo
+  ])
 
 $(mconcat <$> traverse deriveJSONAndSchema jsonAndSchemaTypes)
 
@@ -59,7 +65,6 @@ $(mconcat <$> traverse deriveToParamSchema [
   , ''FunDepIdentifier
   , ''RelSchemaIdentifier
   , ''PhysSchemaIdentifier
-  -- , ''ParentItemIdentifier
   ])
 
 instance S.ToParamSchema ParentItemIdentifier where

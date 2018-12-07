@@ -9,6 +9,11 @@ import ProjectM36.Tupleable
 import GHC.Generics
 import Data.Binary
 
+deriveGeneric :: Name -> Q [Dec]
+deriveGeneric t =
+  let typ = return $ ConT t
+  in [d|deriving instance Generic $typ|]
+
 deriveAtomable :: Name -> Q [Dec]
 deriveAtomable t =
   let typ = return $ ConT t
@@ -16,7 +21,6 @@ deriveAtomable t =
   in do
     [d|deriving instance Show $typ|]
     <<>> [d|deriving instance Eq $typ|]
-    <<>> [d|deriving instance Generic $typ|]
     <<>> [d|instance NFData $typ|]
     <<>> [d|instance Binary $typ|]
     <<>> [d|instance Atomable $typ|]
@@ -24,7 +28,4 @@ deriveAtomable t =
 deriveTupleable :: Name -> Q [Dec]
 deriveTupleable t =
   let typ = return $ ConT t
-      (<<>>) = liftM2 (<>)
-  in do
-    [d|deriving instance Generic $typ|]
-    <<>> [d|instance Tupleable $typ|]
+  in [d|instance Tupleable $typ|]

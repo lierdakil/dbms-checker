@@ -40,10 +40,8 @@ checkCreds jwtCfg AuthData{..} = do
       bshs = saltedPasswordHash
   when (not $ validatePassword bspw bshs) $ throwError err401
   let usr = UserSessionData {
-       userSessionUserId = id'
-     , userSessionUserName = authLogin
-     , userSessionUserRole = role
-  }
+        userSessionUserInfo = toResponseBody $ head rel
+        }
   sd <- asks configSessionDur
   expirationDateTime <- Just . addUTCTime sd <$> liftIO getCurrentTime
   BL8.unpack <$> (handle =<< liftIO (makeJWT usr jwtCfg expirationDateTime))

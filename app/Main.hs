@@ -30,7 +30,7 @@ main = do
   , configDBSession    = sessionId
   , configPort       = fromMaybe 8081 (read <$> lookup "DBMS_CHECKER_PORT" env)
   , configOrigins    = words <$> lookup "DBMS_CHECKER_ORIGINS" env
-  , configSessionDur = nominalDay * fromMaybe 7 (read <$> lookup "DBMS_SESSION_EXPIRATION_DAYS" env)
+  , configSessionDur = nominalDay * fromIntegral (fromMaybe (7 :: Word) (read <$> lookup "DBMS_SESSION_EXPIRATION_DAYS" env))
   }
   let keyPath = "data/jwtKey.json"
       handleErr err = do

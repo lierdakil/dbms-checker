@@ -37,3 +37,6 @@ relations = [
   , ''RelationalSchema
   , ''PhysicalSchema
   ]
+
+joins :: [Name]
+joins = [''CommentWithUserInfo]

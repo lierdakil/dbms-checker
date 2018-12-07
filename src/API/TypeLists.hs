@@ -41,5 +41,4 @@ jsonAndSchemaTypes = [
   , ''ParentItemIdentifier
   , ''CommentPriority
   , ''CommentStatus
-  , ''CommentStatusInfo
   ]

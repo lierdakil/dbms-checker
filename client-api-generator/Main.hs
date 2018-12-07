@@ -9,10 +9,11 @@ import API.JsonDeriv
 import API.TypeLists
 import API.TH
 import Data.Aeson.TypeScript.TH
+import Data.UUID
 
-instance TypeScript Word where
+instance TypeScript UUID where
   getTypeScriptDeclarations _ = []
-  getTypeScriptType _ = "number"
+  getTypeScriptType _ = "string"
 
 $(mconcat <$> traverse (deriveTypeScript jsonDerivationOptions) allJsonTypes)
 
