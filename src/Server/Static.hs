@@ -22,6 +22,6 @@ staticServer = serveDirectoryWith settings
     }
   lookupFile orig xs
     | not $ null xs
-    , any (`T.isSuffixOf` fromPiece (last xs)) [".html", ".css", ".js", ".map"]
+    , any (`T.isSuffixOf` fromPiece (last xs)) [".html", ".css", ".js", ".map", ".svg"]
     = orig [last xs]
     | otherwise = orig [unsafeToPiece "index.html"]
