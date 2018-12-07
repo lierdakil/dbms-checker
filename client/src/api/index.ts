@@ -205,7 +205,15 @@ async function request(
       redirect: 'follow',
     }),
   )
-  if (!response.ok) throw new Error(response.statusText)
+  if (!response.ok) {
+    const error = new Error(response.statusText) as Error & {
+      code: number
+      details: string
+    }
+    error.code = response.status
+    error.details = await response.text()
+    throw error
+  }
   if (type == 'json') {
     return response.json()
   } else if (type == 'blob') return response.blob()
