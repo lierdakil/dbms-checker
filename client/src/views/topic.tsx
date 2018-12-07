@@ -8,11 +8,13 @@ import {
   Tooltip,
   Button,
 } from 'react-bootstrap'
+import { Spinner } from './spinner'
 
 interface State {
   predefinedTopics: Map<string, string>
   userTopic: AssignedTopicInfo | null
   userTopicSaved: AssignedTopicInfo | null
+  initialized: boolean
 }
 
 export class Topic extends React.Component<{}, State> {
@@ -22,11 +24,14 @@ export class Topic extends React.Component<{}, State> {
       predefinedTopics: new Map(),
       userTopic: null,
       userTopicSaved: null,
+      initialized: false,
     }
     this.init()
   }
 
   public render() {
+    if (!this.state.initialized) return <Spinner />
+
     const topic = this.state.userTopic
     const topicSelectorTitle = !topic
       ? 'Выберите тему'
@@ -178,6 +183,7 @@ export class Topic extends React.Component<{}, State> {
       predefinedTopics: new Map(toMap(await api.listPredefinedTopics())),
       userTopic: topic,
       userTopicSaved: topic,
+      initialized: true,
     }
     this.setState(st)
   }

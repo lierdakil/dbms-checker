@@ -129,11 +129,11 @@ export async function getSQLSchema(
   return request(`/sqlschemas/${id}`, 'GET')
 }
 
-export async function getERDRender(id: string): Promise<Blob> {
-  return request(`/erd/${id}/render`, 'GET', undefined, 'blob')
+export async function postERDRender(desc: string): Promise<Blob> {
+  return request(`/render/erd`, 'POST', desc, 'blob')
 }
-export async function getFunDepRender(id: string): Promise<Blob> {
-  return request(`/fundeps/${id}/render`, 'GET', undefined, 'blob')
+export async function postFunDepRender(desc: string): Promise<Blob> {
+  return request(`/render/fundeps`, 'POST', desc, 'blob')
 }
 
 export async function patchERD(
