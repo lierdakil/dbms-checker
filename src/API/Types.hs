@@ -104,11 +104,18 @@ instance HasResponseBody PhysicalSchema where
     , validationErrors = []
     }
 
+data UserInfo = UserInfo {
+    userInfoUserId :: UserIdentifier
+  , userInfoUsername :: Text
+  , userInfoUserRole :: Role
+  , userInfoUserGroup :: Group
+  }
+
 data CommentInfo = CommentInfo {
     id :: CommentIdentifier
   , parentItem :: ParentItemIdentifier
   , parentComment :: ParentComment
-  , commentAuthor :: Text -- username
+  , commentAuthor :: UserInfo
   , commentPrio :: CommentPriority
   , commentText :: Text
   , commentStatus :: CommentStatus

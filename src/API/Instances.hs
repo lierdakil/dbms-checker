@@ -34,6 +34,9 @@ $(mconcat <$> traverse deriveJSONOnly jsonOnlyTypes)
 deriving instance Generic ParentComment
 instance ToSchema ParentComment where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
+deriving instance Generic Group
+instance ToSchema Group where
+  declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 deriving instance Generic (BasicCrudResponseBodyWithoutAnything a)
 deriving instance Generic (BasicCrudResponseBodyWithValidation a)

@@ -15,10 +15,12 @@ jsonOnlyTypes = [
   , ''BasicCrudResponseBodyWithValidation
   , ''BasicCrudResponseBodyWithAcceptance
   , ''BasicCrudResponseBodyWithAcceptanceAndValidation
+  , ''Group
   ]
 
 jsonAndSchemaTypes = [
     ''UserIdentifier
+  , ''UserInfo
   , ''PredefinedTopicIdentifier
   , ''CustomTopicIdentifier
   , ''ERDIdentifier
