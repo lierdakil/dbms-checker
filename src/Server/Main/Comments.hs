@@ -20,6 +20,7 @@ import DB.Utils
 import TutorialD.QQ
 import ProjectM36.Base
 import ProjectM36.Relation
+import Data.Time
 
 comments :: ServerT CommentsAPI SessionEnv
 comments = postComment
@@ -33,8 +34,10 @@ postComment CommentBodyInfo{..} = bracketDB $ do
   userInfo@UserInfo{..} <- asks (userSessionUserInfo . sessionData)
   when (userInfoUserRole /= Teacher) $ checkItemOwnership parentItem
   nid <- getNewId CommentIdentifier
+  now <- liftIO getCurrentTime
   let comment = Comment {
       id = nid
+    , commentTime = now
     , parentItem = parentItem
     , parentComment = parentComment
     , commentAuthor = userInfoUserId
@@ -43,9 +46,9 @@ postComment CommentBodyInfo{..} = bracketDB $ do
     , commentStatus = CommentStateOpen
     }
   execDB [tutdctx|insert Comment $comment|]
-  commitDB
   return $ CommentInfo {
       id = nid
+    , commentTime = now
     , parentItem = parentItem
     , commentAuthor = userInfo
     , commentPrio = commentPrio
@@ -59,32 +62,44 @@ getComments Nothing = bracketDB $ do
   userRole <- asks (userSessionUserRole . sessionData)
   when (userRole /= Teacher) $ throwError err403
   (rels :: [CommentWithUserInfo]) <-
-    fromRelation =<< execDB [tutdrel|Comment join
-      (User rename {id as commentAuthor, username as authorUsername
-      , group as authorGroup, role as authorRole})|]
+    fromRelation =<< execDB [tutdrel|Comment join $userRelationForJoin|]
   return $ toResponseBody rels
 getComments (Just parentItem) = bracketDB $ do
   role <- asks (userSessionUserRole . sessionData)
   when (role /= Teacher) $ checkItemOwnership parentItem
   (rels :: [CommentWithUserInfo]) <-
     fromRelation =<< execDB [tutdrel|(Comment where parentItem = $parentItem) join
-      (User rename {id as commentAuthor, username as authorUsername
-      , group as authorGroup, role as authorRole})|]
+      $userRelationForJoin|]
   return $ toResponseBody rels
+
+userRelationForJoin :: RelationalExpr
+userRelationForJoin = [tutdrel|(User rename {
+  id as commentAuthor,
+  username as authorUsername,
+  group as authorGroup,
+  email as authorEmail,
+  registrationDate as authorRegistrationDate,
+  role as authorRole
+  })|]
 
 putComment :: CommentIdentifier -> CommentBodyInfo -> SessionEnv CommentInfo
 putComment cid CommentBodyInfo{..} = bracketDB $ do
   userInfo@UserInfo{..} <- asks (userSessionUserInfo . sessionData)
   when (userInfoUserRole /= Teacher) $ checkItemOwnership parentItem
+  (comments :: [Comment]) <- fromRelation =<< execDB
+    [tutdrel|Comment where commentAuthor = $userInfoUserId and id = $cid|]
+  when (null comments) $ throwError err404
+  let Comment{commentTime} = head comments
   execDB [tutdctx|update Comment where commentAuthor = $userInfoUserId and id = $cid (
         parentItem := $parentItem
+      , commentTime := $commentTime
       , parentComment := $parentComment
       , commentPrio := $commentPrio
       , commentText := $commentText
       ) |]
-  commitDB
   return $ CommentInfo {
       id = cid
+    , commentTime = commentTime
     , parentItem = parentItem
     , commentAuthor = userInfo
     , commentPrio = commentPrio
@@ -97,7 +112,6 @@ patchComment :: CommentIdentifier -> CommentStatus -> SessionEnv ()
 patchComment cid st = bracketDB $ do
   uId <- asks (userSessionUserId . sessionData)
   execDB [tutdctx|update Comment where commentAuthor = $uId and id = $cid (commentStatus := $st)|]
-  commitDB
 
 checkItemOwnership :: ParentItemIdentifier -> DBContextT SessionEnv ()
 checkItemOwnership parent = do

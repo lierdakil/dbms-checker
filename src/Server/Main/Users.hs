@@ -79,7 +79,6 @@ patchUsersTopic userId assignedTopic = bracketDB $ do
       when (topicAuthor /= userId) $ throwError err400
       return $ AssignedTopicInfoCustom t
     Just t -> return t
-  commitDB
   return res
 
 getUsersErd :: UserIdentifier -> SessionEnv (Maybe ERDBody)

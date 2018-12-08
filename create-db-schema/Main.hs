@@ -43,6 +43,7 @@ main = do
   let user = User {
         DB.Types.id = UserIdentifier uuid
       , username = "test"
+      , email = "test@livid.pp.ru"
       , group = NoGroup
       , saltedPasswordHash = pwd
       , registrationDate = time

@@ -49,7 +49,6 @@ postFundeps desc = do
         }
   bracketDB $ do
     execDB [tutdctx|insert FunctionalDependencies $fds|]
-    commitDB
   validateFunDeps nid desc
 
 putFundeps :: FunDepIdentifier -> Text -> SessionEnv FunDepBody
@@ -59,7 +58,6 @@ putFundeps fdid desc = do
     let verr = [] :: [Text]
     execDB [tutdctx|update FunctionalDependencies where id = $fdid and userId = $uId (
       funDeps := $desc, validationErrors := $verr )|]
-    commitDB
   validateFunDeps fdid desc
 
 getFundeps :: FunDepIdentifier -> SessionEnv FunDepBody
@@ -80,7 +78,6 @@ validateFunDeps fdid desc = do
                <> parseErrorPretty' desc err]
       bracketDB $ do
         execDB [tutdctx|update FunctionalDependencies where id = $fdid (validationErrors := $errs)|]
-        commitDB
       return BasicCrudResponseBodyWithValidation {
         id = fdid
       , description = desc
@@ -116,7 +113,6 @@ validateFunDeps fdid desc = do
             <> edgeToString fd <> ",\nно она присутствует в переданном списке"
       bracketDB $ do
         execDB [tutdctx|update FunctionalDependencies where id = $fdid (validationErrors := $errors)|]
-        commitDB
       return BasicCrudResponseBodyWithValidation {
           id = fdid
         , description = desc

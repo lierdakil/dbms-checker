@@ -10,8 +10,13 @@ import API.TypeLists
 import API.TH
 import Data.Aeson.TypeScript.TH
 import Data.UUID
+import Data.Time
 
 instance TypeScript UUID where
+  getTypeScriptDeclarations _ = []
+  getTypeScriptType _ = "string"
+
+instance TypeScript UTCTime where
   getTypeScriptDeclarations _ = []
   getTypeScriptType _ = "string"
 

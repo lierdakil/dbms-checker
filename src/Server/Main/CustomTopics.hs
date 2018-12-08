@@ -38,7 +38,6 @@ postCustomTopic topicName = bracketDB $ do
   let assignment = TopicAssignment { userId = uId, topic = CustomAssignedTopic nid }
   execDB [tutdctx|TopicAssignment := TopicAssignment where not userId = $uId
     union $assignment|]
-  commitDB
   return $ AssignedTopicInfoCustom topic
 
 putCustomTopic :: CustomTopicIdentifier -> Text -> SessionEnv (Maybe AssignedTopicInfo)
@@ -46,7 +45,6 @@ putCustomTopic tid topicName = bracketDB $ do
   uId <- asks (userSessionUserId . sessionData)
   execDB [tutdctx|update CustomTopic where id = $tid and topicAuthor = $uId (
     name := $topicName, accepted := NotAccepted )|]
-  commitDB
   (tasgn :: [TopicAssignment]) <- fromRelation =<< execDB [tutdrel|TopicAssignment where userId = $uId|]
   if null tasgn
   then return Nothing
@@ -66,4 +64,3 @@ patchCustomTopic tid acceptanceState = bracketDB $ do
   userRole <- asks (userSessionUserRole . sessionData)
   when (userRole /= Teacher) $ throwError err403
   execDB [tutdctx|update CustomTopic where id = $tid (accepted := $acceptanceState)|]
-  commitDB

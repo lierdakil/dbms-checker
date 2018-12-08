@@ -7,7 +7,8 @@ import Data.Text (Text)
 import qualified Data.ByteString as B
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as M
-import Data.List (foldl')
+import Data.List (foldl', sortBy)
+import Data.Time
 
 import DB.Types
 import DB.Instances ()
@@ -124,12 +125,14 @@ instance HasResponseBody PhysicalSchema where
 data UserInfo = UserInfo {
     userInfoUserId :: UserIdentifier
   , userInfoUsername :: Text
+  , userInfoEmail :: Text
   , userInfoUserRole :: Role
   , userInfoUserGroup :: Group
   }
 
 data CommentInfo = CommentInfo {
     id :: CommentIdentifier
+  , commentTime :: !UTCTime
   , parentItem :: ParentItemIdentifier
   , childrenComments :: [CommentInfo]
   , commentAuthor :: UserInfo
@@ -143,6 +146,7 @@ instance HasResponseBody User where
   toResponseBody User{..} = UserInfo {
       userInfoUserId = id
     , userInfoUserRole = role
+    , userInfoEmail = email
     , userInfoUsername = username
     , userInfoUserGroup = group
     }
@@ -154,16 +158,25 @@ instance HasResponseBody [CommentWithUserInfo] where
       parentMap :: M.HashMap ParentComment [CommentWithUserInfo]
       parentMap = foldl' foldf M.empty comments
       foldf acc x@(CommentWithUserInfo{parentComment}) = M.insertWith (<>) parentComment [x] acc
-      buildForest parent = maybe [] (map toCommentInfo) $ M.lookup parent parentMap
+      buildForest parent = sortBy sorting $ maybe [] (map toCommentInfo) $ M.lookup parent parentMap
       toCommentInfo x@CommentWithUserInfo{id=id'} =
         (toResponseBody x){childrenComments = buildForest $ ParentComment id'}
+      sorting CommentInfo{commentTime = t1} CommentInfo{commentTime = t2}
+        = compare t1 t2
 
 instance HasResponseBody CommentWithUserInfo where
   type instance ResponseBody CommentWithUserInfo = CommentInfo
   toResponseBody CommentWithUserInfo{..} = CommentInfo {
           id = id
+        , commentTime = commentTime
         , parentItem = parentItem
-        , commentAuthor = toResponseBody commentAuthor
+        , commentAuthor = UserInfo {
+              userInfoUserId = commentAuthor
+            , userInfoUsername = authorUsername
+            , userInfoEmail = authorEmail
+            , userInfoUserRole = authorRole
+            , userInfoUserGroup = authorGroup
+            }
         , childrenComments = []
         , commentPrio = commentPrio
         , commentText = commentText

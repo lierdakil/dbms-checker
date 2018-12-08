@@ -60,7 +60,6 @@ postErd desc = do
         }
   bracketDB $ do
     execDB [tutdctx|insert ERDiagram $erdiag|]
-    commitDB
   validateErd nid desc
 
 putErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
@@ -69,7 +68,6 @@ putErd erdid desc = do
   bracketDB $ do
     execDB [tutdctx|update ERDiagram where id = $erdid and userId = $uId (
       diagram := $desc, accepted := NotAccepted )|]
-    commitDB
   validateErd erdid desc
 
 patchErd :: ERDIdentifier -> AcceptanceState -> SessionEnv ()
@@ -77,7 +75,6 @@ patchErd erdid st = bracketDB $ do
   userRole <- asks (userSessionUserRole . sessionData)
   when (userRole /= Teacher) $ throwError err403
   execDB [tutdctx|update ERDiagram where id = $erdid ( accepted := $st )|]
-  commitDB
 
 validateErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
 validateErd iid desc = do
@@ -86,7 +83,6 @@ validateErd iid desc = do
       let errs = [T.pack $ parseErrorPretty' desc err]
       bracketDB $ do
         execDB [tutdctx|update ERDiagram where id = $iid ( validationErrors := $errs, dfds := Nothing )|]
-        commitDB
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
           id = iid,
           description = desc,
@@ -98,7 +94,6 @@ validateErd iid desc = do
           valerrs = [] :: [Text]
       bracketDB $ do
         execDB [tutdctx|update ERDiagram where id = $iid ( derivedFDs := $binfds, validationErrors := $valerrs )|]
-        commitDB
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
           id = iid,
           description = desc,

@@ -49,7 +49,6 @@ postSqlschemas desc = do
         }
   bracketDB $ do
     execDB [tutdctx|insert PhysicalSchema $fds|]
-    commitDB
   validatePhysSchema nid desc
 
 putSqlschemas :: PhysSchemaIdentifier -> Text -> SessionEnv PhysSchemaBody
@@ -60,7 +59,6 @@ putSqlschemas iid desc = do
         acc = NotAccepted
     execDB [tutdctx|update PhysicalSchema where id = $iid and userId = $uId (
       schemaSQL := $desc, validationErrors := $verr, accepted := $acc )|]
-    commitDB
   validatePhysSchema iid desc
 
 patchSqlschemas :: PhysSchemaIdentifier -> AcceptanceState -> SessionEnv ()
@@ -68,7 +66,6 @@ patchSqlschemas iid st = bracketDB $ do
   userRole <- asks (userSessionUserRole . sessionData)
   when (userRole /= Teacher) $ throwError err403
   execDB [tutdctx|update PhysicalSchema where id = $iid ( accepted := $st )|]
-  commitDB
 
 -- TODO
 validatePhysSchema :: PhysSchemaIdentifier -> Text -> SessionEnv PhysSchemaBody

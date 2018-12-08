@@ -48,8 +48,8 @@ instance MonadReader r m => MonadReader r (DBContextT m) where
 getDBConfig :: Monad m => DBContextT m (Connection, SessionId)
 getDBConfig = DBContextT $ ask
 
-commitDB :: (MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m ()
-commitDB = do
+commitDB' :: (MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m ()
+commitDB' = do
   (conn, sid) <- getDBConfig
   handle =<< liftIO (commit sid conn)
 
@@ -59,7 +59,7 @@ rollbackDB = do
   handle =<< liftIO (rollback sid conn)
 
 bracketDB :: (MonadMask m, MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m a -> m a
-bracketDB = bracket getConn freeConn . runReaderT . runDBContextT
+bracketDB ma = bracket getConn freeConn $ runReaderT $ runDBContextT (ma >>= \x -> commitDB' >> return x)
   where
     getConn = do
       let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []

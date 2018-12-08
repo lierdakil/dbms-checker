@@ -9,6 +9,7 @@ import {
   Button,
 } from 'react-bootstrap'
 import { Spinner } from './spinner'
+import { CommentBox } from './comment-box'
 
 interface State {
   predefinedTopics: Map<string, string>
@@ -39,66 +40,77 @@ export class Topic extends React.Component<{}, State> {
       ? 'Собственная тема'
       : topic.contents.name
     return (
-      <form onSubmit={this.handleSubmit}>
-        <DropdownButton title={topicSelectorTitle} id="topic-dropdown">
-          {Array.from(this.state.predefinedTopics.entries()).map(([k, v]) => (
+      <>
+        <form onSubmit={this.handleSubmit}>
+          <DropdownButton title={topicSelectorTitle} id="topic-dropdown">
+            {Array.from(this.state.predefinedTopics.entries()).map(([k, v]) => (
+              <MenuItem
+                eventKey={k}
+                active={
+                  (topic || false) &&
+                  topic.tag === 'AssignedTopicInfoPredefined' &&
+                  topic.contents.id === k
+                }
+                onSelect={this.topicChanged}
+              >
+                {v}
+              </MenuItem>
+            ))}
+            <MenuItem divider />
             <MenuItem
-              eventKey={k}
+              eventKey="custom-topic"
               active={
-                (topic || false) &&
-                topic.tag === 'AssignedTopicInfoPredefined' &&
-                topic.contents.id === k
+                (topic || false) && topic.tag === 'AssignedTopicInfoCustom'
               }
               onSelect={this.topicChanged}
             >
-              {v}
+              Собственная тема
             </MenuItem>
-          ))}
-          <MenuItem divider />
-          <MenuItem
-            eventKey="custom-topic"
-            active={(topic || false) && topic.tag === 'AssignedTopicInfoCustom'}
-            onSelect={this.topicChanged}
-          >
-            Собственная тема
-          </MenuItem>
-        </DropdownButton>
-        {topic && topic.tag === 'AssignedTopicInfoCustom' ? (
-          <div>
-            <label>
-              Название темы:
-              <input
-                type="text"
-                value={topic.contents.name}
-                onChange={this.handleCustomTopicChange}
-              />
-            </label>
-            {this.state.userTopicSaved &&
-            this.state.userTopicSaved.tag === 'AssignedTopicInfoCustom' ? (
-              topic.contents.accepted === 'Accepted' ? (
-                <OverlayTrigger
-                  placement="top"
-                  overlay={<Tooltip>Тема принята</Tooltip>}
-                >
-                  <Glyphicon glyph="ok" color="green" />
-                </OverlayTrigger>
-              ) : (
-                <OverlayTrigger
-                  placement="top"
-                  overlay={<Tooltip>Тема пока не принята</Tooltip>}
-                >
-                  <Glyphicon glyph="remove" color="darkyellow" />
-                </OverlayTrigger>
-              )
-            ) : null}
-          </div>
-        ) : (
-          <div />
-        )}
-        <Button bsStyle="primary" type="submit">
-          Сохранить
-        </Button>
-      </form>
+          </DropdownButton>
+          {topic && topic.tag === 'AssignedTopicInfoCustom' ? (
+            <div>
+              <label>
+                Название темы:
+                <input
+                  type="text"
+                  value={topic.contents.name}
+                  onChange={this.handleCustomTopicChange}
+                />
+              </label>
+              {this.state.userTopicSaved &&
+              this.state.userTopicSaved.tag === 'AssignedTopicInfoCustom' ? (
+                topic.contents.accepted === 'Accepted' ? (
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={<Tooltip>Тема принята</Tooltip>}
+                  >
+                    <Glyphicon glyph="ok" color="green" />
+                  </OverlayTrigger>
+                ) : (
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={<Tooltip>Тема пока не принята</Tooltip>}
+                  >
+                    <Glyphicon glyph="remove" color="darkyellow" />
+                  </OverlayTrigger>
+                )
+              ) : null}
+            </div>
+          ) : (
+            <div />
+          )}
+          <Button bsStyle="primary" type="submit">
+            Сохранить
+          </Button>
+        </form>
+        <CommentBox
+          parentItem={{
+            tag: 'ParentTopicSelection',
+            contents: api.getUserSessionOrLogin().userSessionUserInfo
+              .userInfoUserId,
+          }}
+        />
+      </>
     )
   }
 
@@ -182,13 +194,12 @@ export class Topic extends React.Component<{}, State> {
 
   private async init() {
     const topic = await api.getUserItem('topic')
-    const st: State = {
+    this.setState({
       predefinedTopics: new Map(toMap(await api.listPredefinedTopics())),
       userTopic: topic,
       userTopicSaved: topic,
       initialized: true,
-    }
-    this.setState(st)
+    })
   }
 }
 

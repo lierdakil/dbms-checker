@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields, TypeFamilies, DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric, StandaloneDeriving, MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module API.Instances () where
 
@@ -12,13 +12,15 @@ import Servant.Auth.Server
 import DB.Types
 import API.Types
 import Control.Lens
-import Data.Text (pack, unpack)
+import qualified Data.Text as T
 import Text.Read
+import Data.UUID
 import Control.Arrow
 import Servant (MimeRender, OctetStream, FromHttpApiData(..))
 import Data.Swagger (ToSchema(..))
 import qualified Data.Swagger as S
 import Data.Swagger.Schema (genericDeclareNamedSchemaUnrestricted, defaultSchemaOptions)
+import Data.Coerce
 
 import API.TypeLists
 
@@ -84,4 +86,14 @@ $(mconcat <$> traverse deriveFromHttpApiData [
 
 deriving instance Read ParentItemIdentifier
 instance FromHttpApiData ParentItemIdentifier where
-  parseQueryParam = left pack . readEither . unpack
+  parseQueryParam s = construct
+    where
+      (h, t) = T.breakOn " " s
+      uuid = left (T.pack) $ readEither (T.unpack t) :: Either T.Text UUID
+      construct
+        | h == "ParentTopicSelection" = ParentTopicSelection . coerce <$> uuid
+        | h == "ParentERD" = ParentERD . coerce <$> uuid
+        | h == "ParentFunDep" = ParentFunDep . coerce <$> uuid
+        | h == "ParentRelSchema" = ParentRelSchema . coerce <$> uuid
+        | h == "ParentPhysSchema" = ParentPhysSchema . coerce <$> uuid
+        | otherwise = Left $ "Unknown ParentItem constructor " <> h

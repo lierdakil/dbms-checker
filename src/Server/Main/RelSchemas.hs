@@ -47,7 +47,6 @@ postRelschemas desc = do
         }
   bracketDB $ do
     execDB [tutdctx|insert RelationalSchema $item|]
-    commitDB
   validateRelSchema nid desc
 
 putRelschemas :: RelSchemaIdentifier -> Text -> SessionEnv RelSchemaBody
@@ -57,7 +56,6 @@ putRelschemas iid desc = do
     let verr = [] :: [Text]
     execDB [tutdctx|update RelationalSchema where id = $iid and userId = $uId (
       relations := $desc, validationErrors := $verr )|]
-    commitDB
   validateRelSchema iid desc
 
 validateRelSchema :: RelSchemaIdentifier -> Text -> SessionEnv RelSchemaBody

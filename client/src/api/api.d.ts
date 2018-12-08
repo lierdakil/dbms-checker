@@ -7,6 +7,7 @@ type UserInfo = IUserInfo;
 interface IUserInfo {
   userInfoUserId: UserIdentifier;
   userInfoUsername: string;
+  userInfoEmail: string;
   userInfoUserRole: Role;
   userInfoUserGroup: Group;
 }
@@ -101,6 +102,7 @@ type CommentInfo = ICommentInfo;
 
 interface ICommentInfo {
   id: CommentIdentifier;
+  commentTime: string;
   parentItem: ParentItemIdentifier;
   childrenComments: CommentInfo[];
   commentAuthor: UserInfo;

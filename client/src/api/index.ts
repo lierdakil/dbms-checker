@@ -153,12 +153,11 @@ export async function patchSQLSchema(
 }
 
 export async function getComments(
-  parentItemType: ParentItemType,
-  parentItemId: string,
+  parentItem: ParentItemIdentifier,
 ): Promise<CommentInfo[]> {
-  const parentItem = `${parentItemType} "${parentItemId}"`
+  const parentItemSer = `${parentItem.tag} ${parentItem.contents}`
   return request(
-    `/comments?parentItem=${encodeURIComponent(parentItem)}`,
+    `/comments?parentItem=${encodeURIComponent(parentItemSer)}`,
     'GET',
   )
 }
@@ -182,7 +181,7 @@ export async function patchComment(
   id: string,
   state: CommentStatus,
 ): Promise<void> {
-  return request(`/comments/${id}`, 'PUT', state)
+  return request(`/comments/${id}`, 'PATCH', state)
 }
 
 async function request(
@@ -231,5 +230,3 @@ interface UserItems {
     PhysSchemaIdentifier
   >
 }
-
-type ParentItemType = ParentItemIdentifier['tag']

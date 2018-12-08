@@ -52,6 +52,7 @@ data User = User {
     id :: !UserIdentifier
   , username :: !Text
   , group :: !Group
+  , email :: !Text
   , saltedPasswordHash :: !ByteString
   , registrationDate :: !UTCTime
   , role :: !Role
@@ -85,6 +86,7 @@ data ERDiagram = ERDiagram {
 
 data Comment = Comment {
     id :: !CommentIdentifier
+  , commentTime :: !UTCTime
   , parentItem :: !ParentItemIdentifier
   , parentComment :: !ParentComment
   , commentAuthor :: !UserIdentifier
@@ -119,10 +121,16 @@ data PhysicalSchema = PhysicalSchema {
 
 data CommentWithUserInfo = CommentWithUserInfo {
     id :: !CommentIdentifier
+  , commentTime :: !UTCTime
   , parentItem :: !ParentItemIdentifier
   , parentComment :: !ParentComment
-  , commentAuthor :: !User
+  , commentAuthor :: !UserIdentifier
   , commentPrio :: !CommentPriority
   , commentText :: !Text
   , commentStatus :: !CommentStatus
+  , authorUsername :: !Text
+  , authorGroup :: !Group
+  , authorEmail :: !Text
+  , authorRegistrationDate :: !UTCTime
+  , authorRole :: !Role
   }
