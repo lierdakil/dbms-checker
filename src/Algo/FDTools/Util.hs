@@ -66,7 +66,7 @@ isProperSubsetOf sub sup
     take1 = head . S.toList
 
 expand :: Graph -> S.HashSet Edge
-expand = S.foldl' (\acc (l,r) -> acc `S.union` S.map (\e -> (l, S.singleton e)) r) S.empty . S.fromList . M.toList
+expand = S.unions . map (\(l,r) -> S.map (\x -> (l, S.singleton x)) r) . M.toList
 
 closure :: VertexList -> Graph -> VertexList
 closure x s =
