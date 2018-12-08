@@ -85,7 +85,7 @@ validateErd iid desc = do
     Left err -> do
       let errs = [T.pack $ parseErrorPretty' desc err]
       bracketDB $ do
-        execDB [tutdctx|update ERDiagram where id = $iid ( validationErrors := $errs )|]
+        execDB [tutdctx|update ERDiagram where id = $iid ( validationErrors := $errs, dfds := Nothing )|]
         commitDB
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
           id = iid,
@@ -95,8 +95,9 @@ validateErd iid desc = do
         }
     Right erd' -> do
       let binfds = Just $ BL.toStrict $ B.encode $ erToFDs erd'
+          valerrs = [] :: [Text]
       bracketDB $ do
-        execDB [tutdctx|update ERDiagram where id = $iid ( derivedFDs := $binfds )|]
+        execDB [tutdctx|update ERDiagram where id = $iid ( derivedFDs := $binfds, validationErrors := $valerrs )|]
         commitDB
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
           id = iid,

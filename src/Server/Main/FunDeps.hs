@@ -19,16 +19,17 @@ import DB.Instances ()
 import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
-import Algo.ERTools.Parse
 import Algo.FDTools.Parse
 import Algo.FDTools.Util
 import Algo.FDTools.Pretty
-import Algo.ERToFD
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LTE
 import Text.Megaparsec
 import qualified Data.HashMap.Strict as M
+import Data.Maybe
+import qualified Data.Binary as B
+import qualified Data.ByteString.Lazy as BL
 
 fundeps :: ServerT (BasicCrud "fundepId" FunDepIdentifier) SessionEnv
 fundeps = postFundeps
@@ -91,13 +92,19 @@ validateFunDeps fdid desc = do
         fromRelation =<<
         execDB [tutdrel|ERDiagram matching (FunctionalDependencies where id = $fdid){userId}|]
       when (null erds) $ throwError err404
-      let err e = throwError $ err400{
-            errBody = LTE.encodeUtf8 $ LT.pack $
-              "Ошибка синтаксиса в описании диаграммы 'сущность-связь':\n" <> parseErrorPretty' src e
-            }
-          src = LT.fromStrict . diagram $ head erds
-      erd <- either err return $ parseER src
-      let fdFromER = erToFDs erd
+      let ERDiagram{..} = head erds
+      when (isNothing derivedFDs) $ throwError $
+        if null validationErrors
+        then err500{
+          errBody = LTE.encodeUtf8 $ LT.fromStrict $
+            "Отсутствует сохранённое описание ФЗ из ERD. Сообщите об этой ошибке администратору"
+          }
+        else err400{
+          errBody = LTE.encodeUtf8 $ LT.fromStrict $
+            "Ошибка синтаксиса в описании диаграммы 'сущность-связь':\n" <>
+            T.intercalate "\n" validationErrors
+          }
+      let fdFromER = B.decode $ BL.fromStrict $ fromJust derivedFDs
           extraneous = getUnderiveable fdFromUser fdFromER
           missing = getUnderiveable fdFromER fdFromUser
           errors = map showMissing (M.toList missing) <> map showExtraneous (M.toList extraneous)
