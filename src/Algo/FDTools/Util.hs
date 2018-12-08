@@ -12,6 +12,7 @@ module Algo.FDTools.Util
   , nfbc
   , nf3
   , allvs
+  , getUnderiveable
   ) where
 
 import Algo.FDTools.Types
@@ -35,44 +36,35 @@ minimize = minimize' M.empty . nontrivial
           compareHeadLen = compare `on` (S.size . fst)
           !es' = M.delete (fst fdToTest) es
           !allFDs = M.unionWith (<>) es' acc
+          handleRest (lhs, rhs) = M.insertWith (<>) lhs rhs acc
         in
-        case filterDerivable fdToTest allFDs of
-          (lhs, rhs)
-            | S.null rhs -> minimize' acc es'
-            | otherwise ->
-                let !acc' = M.insertWith (<>) lhs rhs acc
-                in minimize' acc' es'
+        flip minimize' es' $ maybe acc handleRest $ filterDerivable fdToTest allFDs
 
+getUnderiveable :: Graph -> Graph -> Graph
+getUnderiveable fds from = M.mapMaybeWithKey f fds
+  where f lhs rhs = snd <$> filterDerivable (lhs, rhs) from
 
-filterDerivable :: Edge -> Graph -> Edge
-filterDerivable fd fds =
-  let (l, r) = fd
-      cls = closure l fds
-  in (l, r `S.difference` cls)
+filterDerivable :: Edge -> Graph -> Maybe Edge
+filterDerivable (l, r) fds =
+  let diff = r `S.difference` closure l fds
+  in if S.null diff
+     then Nothing
+     else Just (l, diff)
 
 isSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
-isSubsetOf sub sup = S.filter (\el -> not $ el `S.member` sup) sub /= S.empty
+isSubsetOf sub sup = (sup `S.intersection` sub) == sub
 
 isProperSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
-isProperSubsetOf sub sup
-  | S.null sup = False
-  | S.null sub = True
-  | otherwise
-  = let el = take1 sub
-    in if (el `S.member` sup)
-       then isProperSubsetOf (S.delete el sub) (S.delete el sup)
-       else False
-  where
-    take1 = head . S.toList
+isProperSubsetOf sub sup = sub /= sup && isSubsetOf sub sup
 
 expand :: Graph -> S.HashSet Edge
 expand = S.unions . map (\(l,r) -> S.map (\x -> (l, S.singleton x)) r) . M.toList
 
 closure :: VertexList -> Graph -> VertexList
 closure x s =
-  let
-    c = x `S.union` c'
-    c' = S.unions $ M.elems $ M.filterWithKey (\z _ -> z `isSubsetOf` x) s
+  let c = x `S.union` (
+        S.unions $ M.elems $ M.filterWithKey (\z _ -> z `isSubsetOf` x) s
+        )
   in if c == x then c else closure c s
 
 fullext :: Graph -> Graph

@@ -39,7 +39,7 @@ vertexList p = S.fromList <$>
 
 vertex :: Maybe T.Text -> Parser Vertex
 vertex (Just p) = Vertex p <$> ident
-vertex Nothing = Vertex <$> (ident <* char ':') <*> ident
+vertex Nothing = Vertex <$> (ident <* char '.') <*> (oneOf ("θΘ∅0" :: [Char]) *> pure "Θ" <|> ident)
 
 parseGraph :: T.Text -> Either (ParseError Char Void) Graph
 parseGraph = parse graph "input"

@@ -19,7 +19,16 @@ import DB.Instances ()
 import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
-
+import Algo.ERTools.Parse
+import Algo.FDTools.Parse
+import Algo.FDTools.Util
+import Algo.FDTools.Pretty
+import Algo.ERToFD
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LTE
+import Text.Megaparsec
+import qualified Data.HashMap.Strict as M
 
 fundeps :: ServerT (BasicCrud "fundepId" FunDepIdentifier) SessionEnv
 fundeps = postFundeps
@@ -40,7 +49,7 @@ postFundeps desc = do
   bracketDB $ do
     execDB [tutdctx|insert FunctionalDependencies $fds|]
     commitDB
-  return $ toResponseBody fds
+  validateFunDeps nid desc
 
 putFundeps :: FunDepIdentifier -> Text -> SessionEnv FunDepBody
 putFundeps fdid desc = do
@@ -48,14 +57,9 @@ putFundeps fdid desc = do
   bracketDB $ do
     let verr = [] :: [Text]
     execDB [tutdctx|update FunctionalDependencies where id = $fdid and userId = $uId (
-      diagram := $desc, validationErrors := $verr )|]
+      funDeps := $desc, validationErrors := $verr )|]
     commitDB
-  return $ toResponseBody FunctionalDependencies {
-      id = fdid
-    , userId = uId
-    , funDeps = desc
-    , validationErrors = []
-    }
+  validateFunDeps fdid desc
 
 getFundeps :: FunDepIdentifier -> SessionEnv FunDepBody
 getFundeps erdId = bracketDB $ do
@@ -68,5 +72,46 @@ getFundeps erdId = bracketDB $ do
 
 validateFunDeps :: FunDepIdentifier -> Text -> SessionEnv FunDepBody
 validateFunDeps fdid desc = do
-  (erds :: [ERDiagram]) <- bracketDB $ fromRelation =<< (execDB [tutdrel|ERDiagram matching (FunctionalDependencies where id = $fdid){userId}|])
-  return undefined
+  let efdFromUser = parseGraph $ LT.fromStrict desc
+  case efdFromUser of
+    Left err -> do
+      let errs = [T.pack $ "Ошибка синтаксиса в описании функциональных зависимостей:\n"
+               <> parseErrorPretty' desc err]
+      bracketDB $ do
+        execDB [tutdctx|update FunctionalDependencies where id = $fdid (validationErrors := $errs)|]
+        commitDB
+      return BasicCrudResponseBodyWithValidation {
+        id = fdid
+      , description = desc
+      , validationErrors = errs
+      }
+    Right fdFromUser -> do
+      -- get user's erd matching given fd
+      (erds :: [ERDiagram]) <- bracketDB $
+        fromRelation =<<
+        execDB [tutdrel|ERDiagram matching (FunctionalDependencies where id = $fdid){userId}|]
+      when (null erds) $ throwError err404
+      let err e = throwError $ err400{
+            errBody = LTE.encodeUtf8 $ LT.pack $
+              "Ошибка синтаксиса в описании диаграммы 'сущность-связь':\n" <> parseErrorPretty' src e
+            }
+          src = LT.fromStrict . diagram $ head erds
+      erd <- either err return $ parseER src
+      let fdFromER = erToFDs erd
+          extraneous = getUnderiveable fdFromUser fdFromER
+          missing = getUnderiveable fdFromER fdFromUser
+          errors = map showMissing (M.toList missing) <> map showExtraneous (M.toList extraneous)
+          showMissing fd
+            = LT.toStrict $ "В модели \"сущность-связь\" присутствует функицональная зависимость\n"
+            <> edgeToString fd <> ",\nно она не найдена в переданном списке"
+          showExtraneous fd
+            = LT.toStrict $ "В модели \"сущность-связь\" отсутствует функицональная зависимость\n"
+            <> edgeToString fd <> ",\nно она присутствует в переданном списке"
+      bracketDB $ do
+        execDB [tutdctx|update FunctionalDependencies where id = $fdid (validationErrors := $errors)|]
+        commitDB
+      return BasicCrudResponseBodyWithValidation {
+          id = fdid
+        , description = desc
+        , validationErrors = errors
+        }

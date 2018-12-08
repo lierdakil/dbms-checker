@@ -49,29 +49,29 @@ export class FunDeps extends React.Component<{}, State> {
               </div>
             </label>
           </div>
-          {fundeps && fundeps.validationErrors ? (
-            <div>
-              <label>Статус решения:</label>
-              {fundeps.validationErrors.length === 0 ? (
-                <div>
-                  Ошибок не найдено
-                  <Glyphicon glyph="ok" color="green" />
-                </div>
-              ) : (
-                <div>
-                  {fundeps.validationErrors.map((err) => (
-                    <pre>{err}</pre>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : null}
           <div>
             <Button bsStyle="primary" type="submit">
               Сохранить
             </Button>
           </div>
         </form>
+        {fundeps && fundeps.validationErrors ? (
+          <div>
+            <label>Статус решения:</label>
+            {fundeps.validationErrors.length === 0 ? (
+              <div>
+                Ошибок не найдено
+                <Glyphicon glyph="ok" color="green" />
+              </div>
+            ) : (
+              <div>
+                {fundeps.validationErrors.map((err) => (
+                  <pre style={{ backgroundColor: '#ffdddd' }}>{err}</pre>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
         {this.state.lastError ? (
           <>
             <Button onClick={this.dismissError}>
