@@ -3,8 +3,6 @@
 
 module Algo.FDTools.Util
   ( minimize
-  , conservative
-  , collect
   , expand
   , fullext
   , superkeys
@@ -13,133 +11,138 @@ module Algo.FDTools.Util
   , project
   , nfbc
   , nf3
-  , normalize
   , allvs
-  , unions
   ) where
 
 import Algo.FDTools.Types
-import qualified Data.Set as S
-import qualified Control.Arrow as A
-
-conservative :: (Graph -> Graph) -> Graph -> Graph
-conservative f g = res `S.union` add
-  where res = f g
-        rl = allvs g S.\\ allvs res
-        add
-          | S.null rl = S.empty
-          | otherwise = S.singleton (rl, S.empty)
+import qualified Data.HashSet as S
+import qualified Data.HashMap.Strict as M
+import Control.Monad
+import Data.Hashable
+import Data.Function
+import Data.List
 
 minimize :: Graph -> Graph
-minimize = collect . minimize' S.empty . nontrivial . expand
+minimize = minimize' M.empty . nontrivial
   where
     minimize' :: Graph -> Graph -> Graph
     minimize' acc es
-      | es == S.empty = acc
+      | M.null es = acc
       | otherwise =
         let
           -- find element with longest left side
-          fdToTest = snd $ S.findMax $ S.map (\x -> (S.size $ fst x, x)) es
-          !es' = S.delete fdToTest es
-          !allFDs = es' `S.union` acc
+          fdToTest = maximumBy compareHeadLen $ M.toList es
+          compareHeadLen = compare `on` (S.size . fst)
+          !es' = M.delete (fst fdToTest) es
+          !allFDs = M.unionWith (<>) es' acc
         in
-        if isDerivable fdToTest allFDs
-        then minimize' acc es'
-        else
-          let !acc' = S.insert fdToTest acc
-          in minimize' acc' es'
+        case filterDerivable fdToTest allFDs of
+          (lhs, rhs)
+            | S.null rhs -> minimize' acc es'
+            | otherwise ->
+                let !acc' = M.insertWith (<>) lhs rhs acc
+                in minimize' acc' es'
 
-isDerivable :: Edge -> Graph -> Bool
-isDerivable fd fds =
+
+filterDerivable :: Edge -> Graph -> Edge
+filterDerivable fd fds =
   let (l, r) = fd
       cls = closure l fds
-  in r `S.isSubsetOf` cls
+  in (l, r `S.difference` cls)
 
-collect :: Graph -> Graph
-collect g
-  | S.null g = g
-  | otherwise =
-  let
-    (l, _) = S.elemAt 0 g
-    (c, gs) = S.partition ((==l) . fst) g
-    collected = (l, unions $ S.map snd c)
-  in
-    S.insert collected $ collect gs
+isSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
+isSubsetOf sub sup = S.filter (\el -> not $ el `S.member` sup) sub /= S.empty
 
-unions :: Ord a => S.Set (S.Set a) -> S.Set a
-unions = S.foldl' S.union S.empty
+isProperSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
+isProperSubsetOf sub sup
+  | S.null sup = False
+  | S.null sub = True
+  | otherwise
+  = let el = take1 sub
+    in if (el `S.member` sup)
+       then isProperSubsetOf (S.delete el sub) (S.delete el sup)
+       else False
+  where
+    take1 = head . S.toList
 
-expand :: Graph -> Graph
-expand = S.foldl' (\acc (l,r) -> acc `S.union` S.map (\e -> (l, S.singleton e)) r) S.empty
+expand :: Graph -> S.HashSet Edge
+expand = S.foldl' (\acc (l,r) -> acc `S.union` S.map (\e -> (l, S.singleton e)) r) S.empty . S.fromList . M.toList
 
 closure :: VertexList -> Graph -> VertexList
 closure x s =
   let
     c = x `S.union` c'
-    c' = unions $ S.map snd $ S.filter (\z -> fst z `S.isSubsetOf` x) s
+    c' = S.unions $ M.elems $ M.filterWithKey (\z _ -> z `isSubsetOf` x) s
   in if c == x then c else closure c s
 
 fullext :: Graph -> Graph
-fullext g = S.map (closureToFDs g) allsubs
+fullext g = S.foldl' (\acc x -> uncurry (M.insertWith (<>)) (closureToFDs g x) acc) M.empty allsubs
   where
-    allsubs = powerset (allvs g) S.\\ S.singleton S.empty
+    allsubs = S.delete S.empty $ powerset (allvs g)
 
 allvs :: Graph -> VertexList
-allvs = unions . S.map (uncurry S.union)
+allvs g = S.unions $ M.keys g <> M.elems g
 
-powerset :: Ord a => S.Set a -> S.Set (S.Set a)
-powerset s
-    | s == S.empty = S.singleton S.empty
-    | otherwise = S.map (S.insert x) pxs `S.union` pxs
-        where (x, xs) = S.deleteFindMin s
-              pxs = powerset xs
+powerset :: (Eq a, Hashable a) => S.HashSet a -> S.HashSet (S.HashSet a)
+powerset = S.fromList . fmap S.fromList . listPowerset . S.toList
+  where
+  listPowerset :: [a] -> [[a]]
+  listPowerset = filterM (const [True, False])
 
 closureToFDs :: Graph -> VertexList -> Edge
 closureToFDs g x = (x, closure x g)
 
-superkeys :: Graph -> Graph
+superkeys :: Graph -> S.HashSet Edge
 superkeys g = S.map (\x -> (x, avs)) $ S.filter (\x -> closure x g == avs) $ powerset als
   where
-    als = unions $ S.map fst g
+    als = S.unions $ M.keys g
     avs = allvs g
 
-potkeys :: Graph -> Graph
-potkeys sk = S.filter (\x -> all (not . (`S.isProperSubsetOf` fst x) . fst) $ S.toList sk) sk
-  -- where
-    -- sk = superkeys g
+potkeys :: S.HashSet Edge -> S.HashSet Edge
+potkeys sk = S.filter (\x -> all (not . (`isProperSubsetOf` fst x) . fst) $ S.toList sk) sk
 
 nontrivial :: Graph -> Graph
-nontrivial = S.map (\(f,s) -> (f, S.filter (not . (`S.member` f)) s)) . S.filter (not . uncurry (flip S.isSubsetOf))
+nontrivial = M.mapMaybeWithKey removeTrivialFromLeftSide
+  where
+    removeTrivialFromLeftSide rhs lhs =
+      case lhs `S.difference` rhs of
+        x | S.null x -> Nothing
+          | otherwise -> Just x
 
 project :: VertexList -> Graph -> Graph
-project p = S.map (A.second (S.filter (`S.member` p))) . S.filter (\(f,_) -> f `S.isSubsetOf` p)
+project p = M.map (S.intersection p)
+          . M.filterWithKey (\f _ -> f `isSubsetOf` p)
 
 nfbc :: Graph -> Graph -> Graph
-nfbc g sk = S.filter (\(f,_) -> not $ f `S.member` sks) $ g
+nfbc g sk = M.filterWithKey (\f _ -> not $ f `S.member` sks) g
   where
-    sks = S.map fst $ sk
+    sks = S.fromList $ M.keys sk
 
 nf3 :: Graph -> Graph -> Graph
-nf3 nfbc' pk = collect . S.filter (\(_,r) -> not $ r `S.isSubsetOf` kas) . expand $ nfbc'
+nf3 nfbc' pk = M.mapMaybe fdSatisfies3NF $ nfbc'
   where
-    kas = unions $ S.map fst $ pk
+    kas = S.unions $ M.keys pk
+    fdSatisfies3NF rhs =
+      case rhs `S.difference` kas of
+        x | S.null x -> Nothing
+          | otherwise -> Just x
 
-normalize :: Graph -> Graph -> Either [[Vertex]] [[Vertex]]
-normalize g invFD = checkErr
-  where
-    -- restFD = S.difference g invFD
-    invAttrR = unions $ S.map snd invFD
-    -- restAttrL = unions $ S.map fst restFD
-    invRels :: [[Vertex]]
-    invRels = S.toList $ S.map (S.toList . uncurry S.union) invFD
-    nf1 = unions $ S.map (uncurry S.union) g
-    baseRel :: [Vertex]
-    baseRel = S.toList $ nf1 S.\\ invAttrR
-    -- basePrj = conservative nontrivial $ project (S.fromList baseRel) $ fullext g
-    result | S.null $ g S.\\ invFD = invRels
-           | otherwise =  baseRel : invRels
-    -- prjFDs = S.unions $ map (\x -> project (S.fromList x) $ fullext g) result
-    checkErr = Right result
-    -- checkErr = if fullext prjFDs == fullext g
-    --            then Right result
-    --            else Left result
+-- normalize :: Graph -> Graph -> Either [[Vertex]] [[Vertex]]
+-- normalize g invFD = checkErr
+--   where
+--     -- restFD = S.difference g invFD
+--     invAttrR = unions $ S.map snd invFD
+--     -- restAttrL = unions $ S.map fst restFD
+--     invRels :: [[Vertex]]
+--     invRels = S.toList $ S.map (S.toList . uncurry S.union) invFD
+--     nf1 = unions $ S.map (uncurry S.union) g
+--     baseRel :: [Vertex]
+--     baseRel = S.toList $ nf1 `S.difference` invAttrR
+--     -- basePrj = conservative nontrivial $ project (S.fromList baseRel) $ fullext g
+--     result | S.null $ g `S.difference` invFD = invRels
+--            | otherwise =  baseRel : invRels
+--     -- prjFDs = S.unions $ map (\x -> project (S.fromList x) $ fullext g) result
+--     checkErr = Right result
+--     -- checkErr = if fullext prjFDs == fullext g
+--     --            then Right result
+--     --            else Left result

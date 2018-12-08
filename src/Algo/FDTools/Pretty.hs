@@ -3,11 +3,12 @@
 module Algo.FDTools.Pretty where
 
 import Algo.FDTools.Types
-import qualified Data.Set as S
+import qualified Data.HashSet as S
+import qualified Data.HashMap.Strict as M
 import qualified Data.Text.Lazy as T
 
 graphToString :: Graph -> T.Text
-graphToString = T.intercalate "\n" . map edgeToString . S.toList
+graphToString = T.intercalate "\n" . map edgeToString . M.toList
 
 edgeToString :: Edge -> T.Text
 edgeToString (l, r) = vertexListToString l <> " -> " <> vertexListToString r
@@ -15,7 +16,7 @@ edgeToString (l, r) = vertexListToString l <> " -> " <> vertexListToString r
 vertexListToString :: VertexList -> T.Text
 vertexListToString vl
   | S.size vl == 0 = "()"
-  | S.size vl == 1 = vertexToString $ S.elemAt 0 vl
+  | S.size vl == 1 = vertexToString $ head $ S.toList vl
   | otherwise = "(" <> T.intercalate ", " (map vertexToString $ S.toList vl) <> ")"
 
 vertexToString :: Vertex -> T.Text

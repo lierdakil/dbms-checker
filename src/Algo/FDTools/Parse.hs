@@ -10,13 +10,14 @@ import Text.Megaparsec.Char hiding (space, spaceChar)
 import Data.Void
 import Control.Monad
 import qualified Data.Text.Lazy as T
-import qualified Data.Set as S
+import qualified Data.HashSet as S
+import qualified Data.HashMap.Strict as M
 
 comment :: Parser ()
 comment = try (char '#' *> anyChar `manyTill` optionalEol *> pure ())
 
 graph :: Parser Graph
-graph = S.fromList <$> (
+graph = M.fromListWith (<>) <$> (
   space *> skipp *>
   some (space *> edge <* space <* (comment <|> optionalEol) <* skipp) <* eof
   )

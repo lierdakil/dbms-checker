@@ -7,15 +7,15 @@ import Algo.FDTools.Types
 import Algo.FDTools.Util
 import Data.Maybe
 import qualified Data.HashMap.Strict as M
-import qualified Data.Set as S
+import qualified Data.HashSet as S
 
 erToFDs :: ER -> Graph
-erToFDs ER{..} = collect . nontrivial . S.fromList $
+erToFDs ER{..} = nontrivial . M.fromListWith (<>) $
   entityFDs ++ relFDs
   where
     entityFDs = concatMap (entityFD . snd) $ M.toList erEntities
     entityFD x= map (--> attrs2vtx x (entAttrs x)) $ keysFromEnt x
-    keysFromEnt :: Entity -> [S.Set Vertex]
+    keysFromEnt :: Entity -> [S.HashSet Vertex]
     keysFromEnt e
       | entStrength e == Weak
       = concatMap (map (entKeysNative e <>) . keysFromEnt) (relsEntsWith1 e)
@@ -28,7 +28,7 @@ erToFDs ER{..} = collect . nontrivial . S.fromList $
     findEntInConnOfType t (t', n)
       | t == t' = M.lookup n erEntities
       | otherwise = Nothing
-    entKeysNative :: Entity -> S.Set Vertex
+    entKeysNative :: Entity -> S.HashSet Vertex
     entKeysNative x
       | null aas = attrs2vtx x [Attr (AttrParentEnt $ entName x) "id" True]
       | otherwise = attrs2vtx x kas
