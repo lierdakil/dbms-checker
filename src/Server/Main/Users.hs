@@ -17,19 +17,32 @@ import DB.Types
 import Servant
 import DB.Instances ()
 import DB.Accessor
-import DB.Utils
 import TutorialD.QQ
 import Data.UUID hiding (null)
 import Data.ByteString.Lazy (fromStrict)
 
 users :: ServerT UsersAPI SessionEnv
-users userId =
+users = getUsers
+   :<|> \userId ->
         (getUsersTopic userId
    :<|> patchUsersTopic userId)
    :<|> getUsersErd userId
    :<|> getUsersFundep userId
    :<|> getUsersRelSchema userId
    :<|> getUsersSqlSchema userId
+
+getUsers :: Maybe Text -> SessionEnv [UserInfo]
+getUsers Nothing = bracketDB $ do
+  role <- asks (userSessionUserRole . sessionData)
+  when (role/=Teacher) $ throwError err403
+  (users' :: [User]) <- fromRelation =<< execDB [tutdrel|User|]
+  return $ toResponseBody users'
+getUsers (Just grp) = bracketDB $ do
+  role <- asks (userSessionUserRole . sessionData)
+  when (role/=Teacher) $ throwError err403
+  let group = Group grp
+  (users' :: [User]) <- fromRelation =<< execDB [tutdrel|User where group = $group |]
+  return $ toResponseBody users'
 
 getUsersTopic :: UserIdentifier -> SessionEnv (Maybe AssignedTopicInfo)
 getUsersTopic = bracketDB . getUsersTopicInternal

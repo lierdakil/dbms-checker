@@ -19,7 +19,6 @@ import API.Types
 import API.Instances ()
 import GHC.Types (Symbol)
 import Servant.Swagger.UI
-import qualified Data.ByteString.Lazy as BL
 
 type CustomTopicsAPI =
        ReqBody '[JSON] Text :> Post '[JSON] AssignedTopicInfo
@@ -29,6 +28,7 @@ type CustomTopicsAPI =
        )
 
 type UsersAPI =
+  QueryParam "group" Text :> Get '[JSON] [UserInfo] :<|>
   Capture "userId" UserIdentifier :> (
        "topic" :> (
               Get '[JSON] (Maybe AssignedTopicInfo)

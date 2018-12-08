@@ -97,6 +97,10 @@ instance HasResponseBody ERDiagram where
     , accepted = accepted
     , validationErrors = validationErrors
     }
+
+instance {-#OVERLAPPABLE#-} HasResponseBody a => HasResponseBody [a] where
+  type ResponseBody [a] = [ResponseBody a]
+  toResponseBody = map toResponseBody
 instance HasResponseBody FunctionalDependencies where
   toResponseBody FunctionalDependencies{..} = BasicCrudResponseBodyWithValidation {
       id = id
@@ -144,7 +148,7 @@ instance HasResponseBody User where
     }
 
 instance HasResponseBody [CommentWithUserInfo] where
-  type instance ResponseBody [CommentWithUserInfo] = [CommentInfo]
+  type instance ResponseBody [CommentWithUserInfo] = [ResponseBody CommentWithUserInfo]
   toResponseBody comments = buildForest NoParentComment
     where
       parentMap :: M.HashMap ParentComment [CommentWithUserInfo]
