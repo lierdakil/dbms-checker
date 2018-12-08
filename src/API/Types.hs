@@ -38,6 +38,7 @@ type family CanValidate (idType :: *) where
   CanValidate FunDepIdentifier = 'True
   CanValidate RelSchemaIdentifier = 'True
   CanValidate PhysSchemaIdentifier = 'True
+  CanValidate ERDIdentifier = 'True
   CanValidate idType = 'False
 
 type family CanAccept (idType :: *) where
@@ -90,10 +91,11 @@ class HasResponseBody a where
   toResponseBody :: a -> ResponseBody a
 
 instance HasResponseBody ERDiagram where
-  toResponseBody ERDiagram{..} = BasicCrudResponseBodyWithAcceptance {
+  toResponseBody ERDiagram{..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
       id = id
     , description = diagram
     , accepted = accepted
+    , validationErrors = validationErrors
     }
 instance HasResponseBody FunctionalDependencies where
   toResponseBody FunctionalDependencies{..} = BasicCrudResponseBodyWithValidation {
@@ -171,7 +173,7 @@ data CommentBodyInfo = CommentBodyInfo {
   , commentText :: Text
   }
 
-type ERDBody = BasicCrudResponseBodyWithAcceptance ERDIdentifier
-type FunDepBody = BasicCrudResponseBodyWithValidation FunDepIdentifier
-type RelSchemaBody = BasicCrudResponseBodyWithValidation RelSchemaIdentifier
-type PhysSchemaBody = BasicCrudResponseBodyWithAcceptanceAndValidation PhysSchemaIdentifier
+type ERDBody = BasicCrudResponseBody ERDIdentifier
+type FunDepBody = BasicCrudResponseBody FunDepIdentifier
+type RelSchemaBody = BasicCrudResponseBody RelSchemaIdentifier
+type PhysSchemaBody = BasicCrudResponseBody PhysSchemaIdentifier

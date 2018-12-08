@@ -78,7 +78,9 @@ data ERDiagram = ERDiagram {
     id :: !ERDIdentifier
   , userId :: !UserIdentifier
   , diagram :: !Text
+  , derivedFDs :: !(Maybe ByteString)
   , accepted :: !AcceptanceState
+  , validationErrors :: ![Text]
   }
 
 data Comment = Comment {

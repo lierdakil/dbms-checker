@@ -20,6 +20,14 @@ import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
 
+import Algo.ERTools.Parse
+import Algo.ERToFD
+import Text.Megaparsec
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import qualified Data.Binary as B
+import qualified Data.ByteString.Lazy as BL
+
 erd :: ServerT (BasicCrud "erdId" ERDIdentifier) SessionEnv
 erd = postErd
   :<|> erdManip
@@ -39,31 +47,30 @@ getErd erdId = bracketDB $ do
   return $ toResponseBody $ head erds
 
 postErd :: Text -> SessionEnv ERDBody
-postErd desc = bracketDB $ do
+postErd desc = do
   nid <- getNewId ERDIdentifier
   uId <- asks (userSessionUserId . sessionData)
   let erdiag = ERDiagram {
           id = nid
         , userId = uId
         , diagram = desc
+        , derivedFDs = Nothing
         , accepted = NotAccepted
+        , validationErrors = []
         }
-  execDB [tutdctx|insert ERDiagram $erdiag|]
-  commitDB
-  return $ toResponseBody erdiag
+  bracketDB $ do
+    execDB [tutdctx|insert ERDiagram $erdiag|]
+    commitDB
+  validateErd nid desc
 
 putErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
-putErd erdid desc = bracketDB $ do
+putErd erdid desc = do
   uId <- asks (userSessionUserId . sessionData)
-  execDB [tutdctx|update ERDiagram where id = $erdid and userId = $uId (
-    diagram := $desc, accepted := NotAccepted )|]
-  commitDB
-  return $ toResponseBody ERDiagram {
-      id = erdid
-    , userId = uId
-    , diagram = desc
-    , accepted = NotAccepted
-    }
+  bracketDB $ do
+    execDB [tutdctx|update ERDiagram where id = $erdid and userId = $uId (
+      diagram := $desc, accepted := NotAccepted )|]
+    commitDB
+  validateErd erdid desc
 
 patchErd :: ERDIdentifier -> AcceptanceState -> SessionEnv ()
 patchErd erdid st = bracketDB $ do
@@ -71,3 +78,29 @@ patchErd erdid st = bracketDB $ do
   when (userRole /= Teacher) $ throwError err403
   execDB [tutdctx|update ERDiagram where id = $erdid ( accepted := $st )|]
   commitDB
+
+validateErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
+validateErd iid desc = do
+  case parseER (LT.fromStrict desc) of
+    Left err -> do
+      let errs = [T.pack $ parseErrorPretty' desc err]
+      bracketDB $ do
+        execDB [tutdctx|update ERDiagram where id = $iid ( validationErrors := $errs )|]
+        commitDB
+      return BasicCrudResponseBodyWithAcceptanceAndValidation {
+          id = iid,
+          description = desc,
+          accepted = NotAccepted,
+          validationErrors = errs
+        }
+    Right erd' -> do
+      let binfds = Just $ BL.toStrict $ B.encode $ erToFDs erd'
+      bracketDB $ do
+        execDB [tutdctx|update ERDiagram where id = $iid ( derivedFDs := $binfds )|]
+        commitDB
+      return BasicCrudResponseBodyWithAcceptanceAndValidation {
+          id = iid,
+          description = desc,
+          accepted = NotAccepted,
+          validationErrors = []
+        }
