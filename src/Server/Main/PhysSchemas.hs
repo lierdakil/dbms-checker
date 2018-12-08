@@ -1,29 +1,23 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main.PhysSchemas where
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LT
-import qualified Data.Set as S
 import Control.Monad.Reader
 import Config
 import API
 import API.Types
 import DB.Types
 import Servant
-import Control.Monad.Error.Class
-import Data.Monoid ((<>))
-import Crypto.Hash (hash, Digest, SHA1)
-import Data.Char (isAlphaNum)
-import Control.Exception
-import System.IO.Error
+import DB.Instances ()
+import DB.Accessor
+import DB.Utils
+import TutorialD.QQ
 
 
 sqlschemas :: ServerT (BasicCrud "sqlschemaId" PhysSchemaIdentifier) SessionEnv
@@ -34,13 +28,53 @@ sqlschemas = postSqlschemas
          :<|> putSqlschemas sqlSchemaId
 
 getSqlschemas :: PhysSchemaIdentifier -> SessionEnv PhysSchemaBody
-getSqlschemas erdId = undefined
+getSqlschemas itemId = bracketDB $ do
+  (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
+  let request Student = [tutdrel|PhysicalSchema where id = $itemId and userId = $uId|]
+      request Teacher = [tutdrel|PhysicalSchema where id = $itemId|]
+  (items :: [PhysicalSchema]) <- fromRelation =<< execDB (request role)
+  when (null items) $ throwError err404
+  return $ toResponseBody $ head items
 
 postSqlschemas :: Text -> SessionEnv PhysSchemaBody
-postSqlschemas = undefined
+postSqlschemas desc = do
+  nid <- getNewId PhysSchemaIdentifier
+  uId <- asks (userSessionUserId . sessionData)
+  let fds = PhysicalSchema {
+          id = nid
+        , userId = uId
+        , schemaSQL = desc
+        , accepted = NotAccepted
+        , validationErrors = []
+        }
+  bracketDB $ do
+    execDB [tutdctx|insert PhysicalSchema $fds|]
+    commitDB
+  validatePhysSchema nid desc
 
 putSqlschemas :: PhysSchemaIdentifier -> Text -> SessionEnv PhysSchemaBody
-putSqlschemas = undefined
+putSqlschemas iid desc = do
+  uId <- asks (userSessionUserId . sessionData)
+  bracketDB $ do
+    let verr = [] :: [Text]
+        acc = NotAccepted
+    execDB [tutdctx|update PhysicalSchema where id = $iid and userId = $uId (
+      schemaSQL := $desc, validationErrors := $verr, accepted := $acc )|]
+    commitDB
+  validatePhysSchema iid desc
 
 patchSqlschemas :: PhysSchemaIdentifier -> AcceptanceState -> SessionEnv ()
-patchSqlschemas = undefined
+patchSqlschemas iid st = bracketDB $ do
+  userRole <- asks (userSessionUserRole . sessionData)
+  when (userRole /= Teacher) $ throwError err403
+  execDB [tutdctx|update PhysicalSchema where id = $iid ( accepted := $st )|]
+  commitDB
+
+-- TODO
+validatePhysSchema :: PhysSchemaIdentifier -> Text -> SessionEnv PhysSchemaBody
+validatePhysSchema iid desc = return BasicCrudResponseBodyWithAcceptanceAndValidation {
+    id = iid
+  , description = desc
+  , validationErrors = []
+  , accepted = NotAccepted
+  }
