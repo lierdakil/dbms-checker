@@ -55,7 +55,7 @@ isSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
 isSubsetOf sub sup = S.foldl' (\acc x -> acc && x `S.member` sup) True sub
 
 isProperSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
-isProperSubsetOf sub sup = sub /= sup && isSubsetOf sub sup
+isProperSubsetOf sub sup = S.size sub < S.size sup && isSubsetOf sub sup
 
 expand :: Graph -> S.HashSet Edge
 expand = S.unions . map (\(l,r) -> S.map (\x -> (l, S.singleton x)) r) . M.toList
