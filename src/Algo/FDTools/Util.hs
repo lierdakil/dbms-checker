@@ -48,11 +48,12 @@ minimize = collect . minimize' S.empty . nontrivial . expand
         else
           let !acc' = S.insert fdToTest acc
           in minimize' acc' es'
-    isDerivable :: Edge -> Graph -> Bool
-    isDerivable fd fds =
-      let (l, r) = fd
-          cls = closure l fds
-      in r `S.isSubsetOf` cls
+
+isDerivable :: Edge -> Graph -> Bool
+isDerivable fd fds =
+  let (l, r) = fd
+      cls = closure l fds
+  in r `S.isSubsetOf` cls
 
 collect :: Graph -> Graph
 collect g

@@ -21,6 +21,7 @@ import Algo.ERTools.Parse
 import Algo.ERTools.GraphViz
 import Algo.FDTools.Parse
 import Algo.FDTools.GraphViz
+import Algo.ERToFD
 import Text.Megaparsec
 import Control.Monad.IO.Class
 
@@ -40,5 +41,12 @@ render "fundep" src = do
     Left err -> throwError err400{errBody = LTE.encodeUtf8 $ LT.pack $ parseErrorPretty' src err}
     Right er -> do
       image <- liftIO $ drawGraph er
+      return $ FileData image
+render "fundepFromER" src = do
+  let eer = parseER (LT.fromStrict src)
+  case eer of
+    Left err -> throwError err400{errBody = LTE.encodeUtf8 $ LT.pack $ parseErrorPretty' src err}
+    Right er -> do
+      image <- liftIO $ drawGraph $ erToFDs er
       return $ FileData image
 render _ _ = throwError err404

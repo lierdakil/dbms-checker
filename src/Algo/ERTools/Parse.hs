@@ -8,10 +8,12 @@ import Algo.Common.Parse
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (space, spaceChar)
 import Data.Either
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as M
 import Data.Void
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as T
+import Control.Monad
+import Data.Maybe
 
 er :: Parser ER
 er = do
@@ -25,10 +27,16 @@ er = do
 entity :: Parser Entity
 entity = do
   _ <- char '*'
+  space
+  paren <- optional $ char '('
   name <- ident
+  when (isJust paren) $ void $ char ')'
+  space
   optionalEol
-  attrs <- many attr
-  return $ Entity name attrs
+  attrs <- many (attr $ AttrParentEnt name)
+  return $ Entity name attrs $ case paren of
+    Just _ -> Weak
+    Nothing -> Strong
 
 rel :: Parser Rel
 rel = do
@@ -36,26 +44,23 @@ rel = do
   name <- ident
   conns <- newconnstx <|> oldconnstx <|> listconnstx
   optionalEol
-  attrs <- many attr
+  attrs <- many (attr $ AttrParentRel name)
   return $ Rel name conns attrs
   where
     oneOrMany = (char '1' *> pure One) <|> (oneOf' "MМ*" *> pure Many)
-    strongOrWeak = char '(' *> space *> (Weak <$> oneOrMany) <* space <* char ')'
-              <|> Strong <$> oneOrMany
     oldconnstx =
       try $ some $ try $ do
         space
         _ <- char ':'
         space
-        ct <- strongOrWeak
+        ct <- oneOrMany
         _ <- some spaceChar
         ent <- ident
         return (ct, ent)
     newconnstx =
       try $ some $ try $ do
         space
-        ct <- Strong <$> ((string "->" *> pure One) <|> (string "--" *> pure Many))
-           <|> Weak <$> ((string "=>" *> pure One) <|> (string "==" *> pure Many))
+        ct <- (string "->" *> pure One) <|> (string "--" *> pure Many)
         space
         ent <- ident
         return (ct, ent)
@@ -63,13 +68,13 @@ rel = do
       try $ do
         ents <- char '(' *> space *> sepBy1 ident colonSep <* space <* char ')'
         space
-        cts <- char '(' *> space *> sepBy1 strongOrWeak colonSep <* space <* char ')'
+        cts <- char '(' *> space *> sepBy1 oneOrMany colonSep <* space <* char ')'
         space
-        return $ zip (cts ++ repeat (Strong Many)) ents
+        return $ zip (cts ++ repeat Many) ents
     colonSep = space *> char ':' <* space
 
-attr :: Parser Attr
-attr = Attr <$> ident <*> option False (char '*' *> pure True) <* optionalEol
+attr :: AttrParent -> Parser Attr
+attr par = Attr par <$> ident <*> option False (char '*' *> pure True) <* optionalEol
 
 parseER :: Text -> Either (ParseError Char Void) ER
 parseER = parse er "input"

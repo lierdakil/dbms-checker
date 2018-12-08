@@ -6,7 +6,7 @@ import Data.Text (Text)
 
 import qualified Data.ByteString as B
 import qualified Data.Text as T
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as M
 import Data.List (foldl')
 
 import DB.Types
@@ -145,7 +145,7 @@ instance HasResponseBody [CommentWithUserInfo] where
   type instance ResponseBody [CommentWithUserInfo] = [CommentInfo]
   toResponseBody comments = buildForest NoParentComment
     where
-      parentMap :: M.Map ParentComment [CommentWithUserInfo]
+      parentMap :: M.HashMap ParentComment [CommentWithUserInfo]
       parentMap = foldl' foldf M.empty comments
       foldf acc x@(CommentWithUserInfo{parentComment}) = M.insertWith (<>) parentComment [x] acc
       buildForest parent = maybe [] (map toCommentInfo) $ M.lookup parent parentMap

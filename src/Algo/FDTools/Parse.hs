@@ -24,20 +24,21 @@ graph = S.fromList <$> (
 
 edge :: Parser Edge
 edge = do
-  p <- option "" $ try ((<>".") <$> ident <* char ':' <* space)
+  p <- optional $ try (ident <* char ':' <* space)
   try $ do
     l <- vertexList p
     space >> (string "->" <|> string "→" <|> string "\\to") >> space
     r <- vertexList p
     return (l, r)
 
-vertexList :: T.Text -> Parser VertexList
+vertexList :: Maybe T.Text -> Parser VertexList
 vertexList p = S.fromList <$>
       (optional (try (char '(')) *> vertex p `sepBy` char ',' <* optional (try (char ')')))
 
 
-vertex :: T.Text -> Parser Vertex
-vertex p = Vertex . (p<>) <$> ident
+vertex :: Maybe T.Text -> Parser Vertex
+vertex (Just p) = Vertex p <$> ident
+vertex Nothing = Vertex <$> (ident <* char ':') <*> ident
 
 parseGraph :: T.Text -> Either (ParseError Char Void) Graph
 parseGraph = parse graph "input"

@@ -6,6 +6,7 @@ import { Spinner } from './spinner'
 interface State {
   erd: Partial<BasicCrudResponseBodyWithAcceptance<string>> | null
   img: string | null
+  imgFD: string | null
   initialized: boolean
   lastError:
     | Error & {
@@ -23,6 +24,7 @@ export class Erd extends React.Component<{}, State> {
     this.state = {
       erd: null,
       img: null,
+      imgFD: null,
       initialized: false,
       lastError: null,
     }
@@ -32,7 +34,7 @@ export class Erd extends React.Component<{}, State> {
   public render() {
     if (!this.state.initialized) return <Spinner />
 
-    const { erd, img } = this.state
+    const { erd, img, imgFD } = this.state
     return (
       <>
         <form onSubmit={this.handleSubmit}>
@@ -86,6 +88,11 @@ export class Erd extends React.Component<{}, State> {
             <Image src={img} />
           </div>
         ) : null}
+        {imgFD ? (
+          <div style={{ overflowX: 'auto' }}>
+            <Image src={imgFD} />
+          </div>
+        ) : null}
       </>
     )
   }
@@ -100,6 +107,7 @@ export class Erd extends React.Component<{}, State> {
       try {
         this.setState({
           img: URL.createObjectURL(await api.postERDRender(description)),
+          imgFD: URL.createObjectURL(await api.postFunDepFromER(description)),
           lastError: null,
         })
       } catch (e) {
@@ -129,12 +137,16 @@ export class Erd extends React.Component<{}, State> {
     const erd = await api.getUserItem('erd')
     this.setState({ erd, initialized: true })
     try {
-      const img = erd
-        ? URL.createObjectURL(await api.postERDRender(erd.description))
-        : null
-      this.setState({ img, lastError: null })
+      if (erd)
+        this.setState({
+          img: URL.createObjectURL(await api.postERDRender(erd.description)),
+          imgFD: URL.createObjectURL(
+            await api.postFunDepFromER(erd.description),
+          ),
+          lastError: null,
+        })
     } catch (e) {
-      this.setState({ lastError: e, img: null })
+      this.setState({ lastError: e, img: null, imgFD: null })
     }
   }
 

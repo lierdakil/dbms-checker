@@ -10,6 +10,7 @@ import DB.TypeLists
 import DB.Types
 import Data.UUID
 import Data.Maybe
+import Data.Hashable
 
 instance Atomable UUID where
   toAtom = ByteStringAtom . toASCIIBytes
@@ -18,8 +19,8 @@ instance Atomable UUID where
   toAtomType _ = ByteStringAtomType
   toAddTypeExpr _ = NoOperation
 
-deriving instance Ord CommentIdentifier
-deriving instance Ord ParentComment
+instance Hashable CommentIdentifier
+instance Hashable ParentComment
 
 $(mconcat <$> traverse deriveGeneric (domains <> DB.TypeLists.relations <> joins))
 $(mconcat <$> traverse deriveAtomable (''User : domains))

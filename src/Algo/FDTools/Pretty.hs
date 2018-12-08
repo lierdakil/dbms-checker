@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Algo.FDTools.Pretty where
 
 import Algo.FDTools.Types
@@ -14,5 +15,8 @@ edgeToString (l, r) = vertexListToString l <> " -> " <> vertexListToString r
 vertexListToString :: VertexList -> T.Text
 vertexListToString vl
   | S.size vl == 0 = "()"
-  | S.size vl == 1 = vtxName $ S.elemAt 0 vl
-  | otherwise = "(" <> T.intercalate ", " (map vtxName $ S.toList vl) <> ")"
+  | S.size vl == 1 = vertexToString $ S.elemAt 0 vl
+  | otherwise = "(" <> T.intercalate ", " (map vertexToString $ S.toList vl) <> ")"
+
+vertexToString :: Vertex -> T.Text
+vertexToString (Vertex parent name) = parent <> "." <> name

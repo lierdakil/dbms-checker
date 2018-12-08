@@ -57,6 +57,8 @@ dependencies:
 - uuid
 - lifted-base
 - wai-app-static
+- unordered-containers
+- hashable
 
 library:
   source-dirs: src

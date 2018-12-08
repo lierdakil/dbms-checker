@@ -7,6 +7,7 @@ module Algo.FDTools.GraphViz
   ) where
 
 import Algo.FDTools.Types
+import Algo.FDTools.Pretty
 import Algo.FDTools.Util
 import Data.Maybe
 import Data.GraphViz
@@ -32,19 +33,18 @@ drawGraph edges = do
 printEdge :: Edge -> DotM T.Text ()
 printEdge (l, r) | S.size l == 1
                  , ln <- S.elemAt 0 l = do
-  names <- catMaybes <$> mapM printVertex (S.toList r)
-  mapM_ (\n -> vtxName ln --> n) names
+  names <- mapM printVertex (S.toList r)
+  mapM_ (\n -> vertexToString ln --> n) names
   return ()
 printEdge (l, r) = do
-  namesl <- catMaybes <$> mapM printVertex (S.toList l)
-  namesr <- catMaybes <$> mapM printVertex (S.toList r)
+  namesl <- mapM printVertex (S.toList l)
+  namesr <- mapM printVertex (S.toList r)
   let name = T.intercalate "," namesl
   node name [shape PointShape]
   mapM_ (\n -> edge n name [ArrowHead noArrow]) namesl
   mapM_ (\n -> name --> n) namesr
   return ()
 
-printVertex :: Vertex -> DotM T.Text (Maybe T.Text)
-printVertex (Vertex n)
-  | n `elem` ["∅","θ","Θ","0"] = return Nothing
-  | otherwise = node n [] >> return (Just n)
+printVertex :: Vertex -> DotM T.Text T.Text
+printVertex (Vertex p n) = node label [] >> return label
+  where label = p <> "." <> n

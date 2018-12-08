@@ -38,7 +38,10 @@ showER ER{..} =
 
 entNode :: Entity -> DotM Text ()
 entNode Entity{..} = do
-  node entName [shape BoxShape]
+  node entName (
+    [shape BoxShape] <>
+    if entStrength == Weak then [Peripheries 2] else []
+    )
   mapM_ (attrNode entName) entAttrs
 
 attrNode :: Text -> Attr -> DotM Text ()
@@ -52,15 +55,9 @@ attrNode p Attr{..} = do
 relNode :: Rel -> DotM Text ()
 relNode Rel{..} = do
   node relName' [shape DiamondShape, textLabel relName]
-  mapM_ (\(typ, ent) -> edge relName' ent ([HeadLabel $ toLabelValue $ cts2s typ] <> cts2a typ)) relConn
+  mapM_ (\(typ, ent) -> edge relName' ent ([HeadLabel $ toLabelValue $ ct2s typ])) relConn
   mapM_ (attrNode relName') relAttrs
   where
-    cts2a :: RelTypeWStrength -> [Attribute]
-    cts2a (Strong _) = []
-    cts2a (Weak _) = [ArrowHead normal, edgeEnds Forward]
-    cts2s :: RelTypeWStrength -> Text
-    cts2s (Strong x) = ct2s x
-    cts2s (Weak x) = ct2s x
     ct2s :: RelType -> Text
     ct2s One = "1"
     ct2s Many = "M"
