@@ -52,7 +52,7 @@ filterDerivable (l, r) fds =
      else Just (l, diff)
 
 isSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
-isSubsetOf sub sup = (sup `S.intersection` sub) == sub
+isSubsetOf sub sup = S.foldl' (\acc x -> acc && x `S.member` sup) True sub
 
 isProperSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
 isProperSubsetOf sub sup = sub /= sup && isSubsetOf sub sup
