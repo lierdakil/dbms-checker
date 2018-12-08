@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as api from '../api'
 import { Glyphicon, Button, Image } from 'react-bootstrap'
 import { Spinner } from './spinner'
+import { CommentBox } from './comment-box'
 
 interface State {
   sqlschema: Partial<
@@ -84,6 +85,14 @@ export class SqlSchema extends React.Component<{}, State> {
             </Button>
           </div>
         </form>
+        {this.state.sqlschema && this.state.sqlschema.id ? (
+          <CommentBox
+            parentItem={{
+              tag: 'ParentERD',
+              contents: this.state.sqlschema.id,
+            }}
+          />
+        ) : null}
       </>
     )
   }

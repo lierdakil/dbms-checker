@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as api from '../api'
 import { Glyphicon, Button, Image } from 'react-bootstrap'
 import { Spinner } from './spinner'
+import { CommentBox } from './comment-box'
 
 interface State {
   fundeps: Partial<BasicCrudResponseBodyWithValidation<string>> | null
@@ -86,6 +87,14 @@ export class FunDeps extends React.Component<{}, State> {
           <div style={{ overflowX: 'auto' }}>
             <Image src={img} />
           </div>
+        ) : null}
+        {this.state.fundeps && this.state.fundeps.id ? (
+          <CommentBox
+            parentItem={{
+              tag: 'ParentERD',
+              contents: this.state.fundeps.id,
+            }}
+          />
         ) : null}
       </>
     )

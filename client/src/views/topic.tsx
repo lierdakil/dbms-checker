@@ -96,9 +96,8 @@ export class Topic extends React.Component<{}, State> {
                 )
               ) : null}
             </div>
-          ) : (
-            <div />
-          )}
+          ) : null}
+          <div />
           <Button bsStyle="primary" type="submit">
             Сохранить
           </Button>

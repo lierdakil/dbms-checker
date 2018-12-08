@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as api from '../api'
 import { Glyphicon, Button } from 'react-bootstrap'
 import { Spinner } from './spinner'
+import { CommentBox } from './comment-box'
 
 interface State {
   relschema: Partial<BasicCrudResponseBodyWithValidation<string>> | null
@@ -61,6 +62,14 @@ export class RelSchema extends React.Component<{}, State> {
             </Button>
           </div>
         </form>
+        {this.state.relschema && this.state.relschema.id ? (
+          <CommentBox
+            parentItem={{
+              tag: 'ParentERD',
+              contents: this.state.relschema.id,
+            }}
+          />
+        ) : null}
       </>
     )
   }

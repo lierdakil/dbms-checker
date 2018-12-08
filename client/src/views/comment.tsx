@@ -67,11 +67,11 @@ export class CommentComp extends React.Component<Props, State> {
                 this.props.comment.commentAuthor.userInfoUserId ===
                   session.userSessionUserInfo.userInfoUserId ? (
                   <Button style={{ float: 'right' }} onClick={this.markClosed}>
-                    Решено
+                    Отметить как решённый
                   </Button>
                 ) : null}
                 <br />
-                {this.props.comment.commentTime}
+                {new Date(this.props.comment.commentTime).toLocaleString()}
               </Clearfix>
             </Panel.Heading>
             <Panel.Body>

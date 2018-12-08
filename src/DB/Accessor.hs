@@ -12,34 +12,29 @@
 module DB.Accessor (module DB.Accessor, toAtom) where
 
 import Servant
-import Config
 import ProjectM36.Client
 import ProjectM36.Base
 import ProjectM36.Tupleable
-import ProjectM36.Atomable
-import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 import Control.Monad.IO.Class
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
-import Control.Exception.Lifted (onException)
 
-
-import Control.Monad.Reader
-import Control.Monad.Except
+import Control.Monad.State
 import Control.Monad.Catch hiding (handle, onException)
 import Control.Monad.Base
-import Control.Monad.Trans.Control
 
 newtype DBContextT m a = DBContextT {
-  runDBContextT :: ReaderT (Connection, SessionId) m a
-  } deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadThrow,
-              MonadCatch,  MonadTransControl)
+  runDBContextT :: ReaderT (Connection, SessionId) (StateT Bool m) a
+  } deriving (Functor, Applicative, Monad, MonadIO, MonadThrow,
+              MonadCatch)
 deriving instance MonadError ServantErr m => MonadError ServantErr (DBContextT m)
 deriving instance MonadBase IO m => MonadBase IO (DBContextT m)
 deriving instance MonadBaseControl IO m => MonadBaseControl IO (DBContextT m)
+instance MonadTrans DBContextT where
+  lift a = DBContextT $ ReaderT $ const $ lift a
 
 instance MonadReader r m => MonadReader r (DBContextT m) where
   ask = lift ask
@@ -48,19 +43,32 @@ instance MonadReader r m => MonadReader r (DBContextT m) where
 getDBConfig :: Monad m => DBContextT m (Connection, SessionId)
 getDBConfig = DBContextT $ ask
 
-commitDB' :: (MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m ()
-commitDB' = do
+setDirty :: Monad m => Bool -> DBContextT m ()
+setDirty b = DBContextT $ put b
+
+getIsDirty :: Monad m => DBContextT m Bool
+getIsDirty = DBContextT $ get
+
+commitDB :: (MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m ()
+commitDB = do
   (conn, sid) <- getDBConfig
   handle =<< liftIO (commit sid conn)
+  setDirty False
 
 rollbackDB :: (MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m ()
 rollbackDB = do
   (conn, sid) <- getDBConfig
   handle =<< liftIO (rollback sid conn)
+  setDirty False
 
 bracketDB :: (MonadMask m, MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m a -> m a
-bracketDB ma = bracket getConn freeConn $ runReaderT $ runDBContextT (ma >>= \x -> commitDB' >> return x)
+bracketDB ma = bracket getConn freeConn $ flip evalStateT False . runReaderT (runDBContextT action)
   where
+    action = do
+      x <- ma
+      isDirty <- getIsDirty
+      when isDirty commitDB
+      return x
     getConn = do
       let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []
       conn <- handle =<< liftIO (connectProjectM36 connInfo)
@@ -86,6 +94,7 @@ execDBContext :: (MonadIO m, MonadError ServantErr m) => DatabaseContextExpr -> 
 execDBContext expr = do
   (conn, sid) <- getDBConfig
   handle =<< liftIO (executeDatabaseContextExpr sid conn expr)
+  setDirty True
 
 execDBRel :: (MonadIO m, MonadError ServantErr m) => RelationalExpr -> DBContextT m Relation
 execDBRel expr = do

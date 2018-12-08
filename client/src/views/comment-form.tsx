@@ -41,21 +41,27 @@ export class CommentForm extends React.Component<Props, State> {
               placeholder="Комментарий"
               onChange={this.handleResponseTextChange}
             />
-            <FormControl
-              componentClass="select"
-              placeholder="Приоритет"
-              onChange={this.handlePrioChange}
-            >
-              <option value="CommentStatusNormal">Обычный</option>
-              <option value="CommentStatusImportant">Высокий</option>
-              <option value="CommentStatusCritical">Критический</option>
-            </FormControl>
+            <label>
+              Важность комментария
+              <FormControl
+                componentClass="select"
+                placeholder="Приоритет"
+                onChange={this.handlePrioChange}
+              >
+                <option value="CommentStatusNormal">Обычная</option>
+                <option value="CommentStatusImportant">Высокая</option>
+                <option value="CommentStatusCritical">Критическая</option>
+              </FormControl>
+            </label>
+            <div />
             <Button type="submit" bsStyle="primary">
               Отправить
             </Button>
-            <Button type="reset" onClick={this.handleCancel}>
-              Отмена
-            </Button>
+            {this.props.toggleable ? (
+              <Button type="reset" onClick={this.handleCancel}>
+                Отмена
+              </Button>
+            ) : null}
           </FormGroup>
         </form>
       )
