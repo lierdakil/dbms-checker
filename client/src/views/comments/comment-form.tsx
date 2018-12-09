@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Button, FormGroup, FormControl } from 'react-bootstrap'
-import { Spinner } from './spinner'
+import { Spinner } from '../spinner'
 
 interface State {
   text: string

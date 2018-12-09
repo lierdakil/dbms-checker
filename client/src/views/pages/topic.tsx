@@ -1,5 +1,5 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import {
   DropdownButton,
   MenuItem,
@@ -8,14 +8,15 @@ import {
   Tooltip,
   Button,
 } from 'react-bootstrap'
-import { Spinner } from './spinner'
-import { CommentBox } from './comment-box'
+import { Spinner } from '../spinner'
+import { CommentBox } from '../comments'
 
 interface State {
   predefinedTopics: Map<string, string>
   userTopic: AssignedTopicInfo | null
   userTopicSaved: AssignedTopicInfo | null
   initialized: boolean
+  progress: boolean
 }
 
 export class Topic extends React.Component<{}, State> {
@@ -26,6 +27,7 @@ export class Topic extends React.Component<{}, State> {
       userTopic: null,
       userTopicSaved: null,
       initialized: false,
+      progress: false,
     }
     this.init()
   }
@@ -101,6 +103,7 @@ export class Topic extends React.Component<{}, State> {
           <Button bsStyle="primary" type="submit">
             Сохранить
           </Button>
+          {this.state.progress ? <Spinner style={{ height: '2em' }} /> : null}
         </form>
         <CommentBox
           parentItem={{
@@ -115,30 +118,35 @@ export class Topic extends React.Component<{}, State> {
 
   private handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!this.state.userTopic) return
-    const topic = this.state.userTopic
-    if (topic.tag === 'AssignedTopicInfoCustom') {
-      let newTopic
-      let savedTopic = this.state.userTopicSaved
-      if (
-        savedTopic &&
-        savedTopic.tag === topic.tag &&
-        savedTopic.contents.id !== ''
-      ) {
-        newTopic = await api.putCustomTopic(
-          savedTopic.contents.id,
-          topic.contents.name,
-        )
-      } else {
-        // new custom topic
-        newTopic = await api.postCustomTopic(topic.contents.name)
+    if (!this.state.userTopic) throw new Error('Тема не задана')
+    this.setState({ progress: true })
+    try {
+      const topic = this.state.userTopic
+      if (topic.tag === 'AssignedTopicInfoCustom') {
+        let newTopic
+        let savedTopic = this.state.userTopicSaved
+        if (
+          savedTopic &&
+          savedTopic.tag === topic.tag &&
+          savedTopic.contents.id !== ''
+        ) {
+          newTopic = await api.putCustomTopic(
+            savedTopic.contents.id,
+            topic.contents.name,
+          )
+        } else {
+          // new custom topic
+          newTopic = await api.postCustomTopic(topic.contents.name)
+        }
+        this.setState({ userTopic: newTopic, userTopicSaved: newTopic })
+      } else if (topic.tag === 'AssignedTopicInfoPredefined') {
+        await api.putUserTopic({
+          tag: 'PredefinedAssignedTopic',
+          contents: topic.contents.id,
+        })
       }
-      this.setState({ userTopic: newTopic, userTopicSaved: newTopic })
-    } else if (topic.tag === 'AssignedTopicInfoPredefined') {
-      await api.putUserTopic({
-        tag: 'PredefinedAssignedTopic',
-        contents: topic.contents.id,
-      })
+    } finally {
+      this.setState({ progress: false })
     }
   }
 

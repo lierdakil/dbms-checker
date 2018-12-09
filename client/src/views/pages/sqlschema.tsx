@@ -1,8 +1,8 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import { Glyphicon, Button, Image } from 'react-bootstrap'
-import { Spinner } from './spinner'
-import { CommentBox } from './comment-box'
+import { Spinner } from '../spinner'
+import { CommentBox } from '../comments'
 
 interface State {
   sqlschema: Partial<
@@ -10,6 +10,7 @@ interface State {
   > | null
   img: string | null
   initialized: boolean
+  progress: boolean
 }
 
 export class SqlSchema extends React.Component<{}, State> {
@@ -19,6 +20,7 @@ export class SqlSchema extends React.Component<{}, State> {
       sqlschema: null,
       img: null,
       initialized: false,
+      progress: false,
     }
     this.init()
   }
@@ -83,6 +85,7 @@ export class SqlSchema extends React.Component<{}, State> {
             <Button bsStyle="primary" type="submit">
               Сохранить
             </Button>
+            {this.state.progress ? <Spinner style={{ height: '2em' }} /> : null}
           </div>
         </form>
         {this.state.sqlschema && this.state.sqlschema.id ? (
@@ -106,20 +109,26 @@ export class SqlSchema extends React.Component<{}, State> {
 
   private handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!this.state.sqlschema || !this.state.sqlschema.description) return
-    if (this.state.sqlschema.id) {
-      // exists
-      const newSQLSchema = await api.putSQLSchema(
-        this.state.sqlschema.id,
-        this.state.sqlschema.description,
-      )
-      this.setState({ sqlschema: newSQLSchema })
-    } else {
-      // create
-      const newSQLSchema = await api.postSQLSchema(
-        this.state.sqlschema.description,
-      )
-      this.setState({ sqlschema: newSQLSchema })
+    if (!this.state.sqlschema || !this.state.sqlschema.description) {
+      throw new Error('Нечего сохранять!')
+    }
+    try {
+      if (this.state.sqlschema.id) {
+        // exists
+        const newSQLSchema = await api.putSQLSchema(
+          this.state.sqlschema.id,
+          this.state.sqlschema.description,
+        )
+        this.setState({ sqlschema: newSQLSchema })
+      } else {
+        // create
+        const newSQLSchema = await api.postSQLSchema(
+          this.state.sqlschema.description,
+        )
+        this.setState({ sqlschema: newSQLSchema })
+      }
+    } finally {
+      this.setState({ progress: false })
     }
   }
 

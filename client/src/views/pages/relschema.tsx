@@ -1,12 +1,13 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import { Glyphicon, Button } from 'react-bootstrap'
-import { Spinner } from './spinner'
-import { CommentBox } from './comment-box'
+import { Spinner } from '../spinner'
+import { CommentBox } from '../comments'
 
 interface State {
   relschema: Partial<BasicCrudResponseBodyWithValidation<string>> | null
   initialized: boolean
+  progress: boolean
 }
 
 export class RelSchema extends React.Component<{}, State> {
@@ -15,6 +16,7 @@ export class RelSchema extends React.Component<{}, State> {
     this.state = {
       relschema: null,
       initialized: false,
+      progress: false,
     }
     this.init()
   }
@@ -60,6 +62,7 @@ export class RelSchema extends React.Component<{}, State> {
             <Button bsStyle="primary" type="submit">
               Сохранить
             </Button>
+            {this.state.progress ? <Spinner style={{ height: '2em' }} /> : null}
           </div>
         </form>
         {this.state.relschema && this.state.relschema.id ? (
@@ -83,20 +86,26 @@ export class RelSchema extends React.Component<{}, State> {
 
   private handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!this.state.relschema || !this.state.relschema.description) return
-    if (this.state.relschema.id) {
-      // exists
-      const newRelSchema = await api.putRelSchema(
-        this.state.relschema.id,
-        this.state.relschema.description,
-      )
-      this.setState({ relschema: newRelSchema })
-    } else {
-      // create
-      const newRelSchema = await api.postRelSchema(
-        this.state.relschema.description,
-      )
-      this.setState({ relschema: newRelSchema })
+    if (!this.state.relschema || !this.state.relschema.description) {
+      throw new Error('Нечего сохранять!')
+    }
+    try {
+      if (this.state.relschema.id) {
+        // exists
+        const newRelSchema = await api.putRelSchema(
+          this.state.relschema.id,
+          this.state.relschema.description,
+        )
+        this.setState({ relschema: newRelSchema })
+      } else {
+        // create
+        const newRelSchema = await api.postRelSchema(
+          this.state.relschema.description,
+        )
+        this.setState({ relschema: newRelSchema })
+      }
+    } finally {
+      this.setState({ progress: false })
     }
   }
 

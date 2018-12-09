@@ -1,8 +1,8 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import { Glyphicon, Button, Image } from 'react-bootstrap'
-import { Spinner } from './spinner'
-import { CommentBox } from './comment-box'
+import { Spinner } from '../spinner'
+import { CommentBox } from '../comments'
 
 interface State {
   erd: Partial<BasicCrudResponseBodyWithAcceptance<string>> | null
@@ -14,6 +14,7 @@ interface State {
         details?: string
       }
     | null
+  progress: boolean
 }
 
 export class Erd extends React.Component<{}, State> {
@@ -26,6 +27,7 @@ export class Erd extends React.Component<{}, State> {
       img: null,
       initialized: false,
       lastError: null,
+      progress: false,
     }
     this.init()
   }
@@ -70,6 +72,7 @@ export class Erd extends React.Component<{}, State> {
             <Button bsStyle="primary" type="submit">
               Сохранить
             </Button>
+            {this.state.progress ? <Spinner style={{ height: '2em' }} /> : null}
           </div>
         </form>
         {this.state.lastError ? (
@@ -120,18 +123,25 @@ export class Erd extends React.Component<{}, State> {
 
   private handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!this.state.erd || !this.state.erd.description) return
-    if (this.state.erd.id) {
-      // exists
-      const newErd = await api.putERD(
-        this.state.erd.id,
-        this.state.erd.description,
-      )
-      this.setState({ erd: newErd })
-    } else {
-      // create
-      const newErd = await api.postERD(this.state.erd.description)
-      this.setState({ erd: newErd })
+    if (!this.state.erd || !this.state.erd.description) {
+      throw new Error('Нечего сохранять!')
+    }
+    try {
+      this.setState({ progress: true })
+      if (this.state.erd.id) {
+        // exists
+        const newErd = await api.putERD(
+          this.state.erd.id,
+          this.state.erd.description,
+        )
+        this.setState({ erd: newErd })
+      } else {
+        // create
+        const newErd = await api.postERD(this.state.erd.description)
+        this.setState({ erd: newErd })
+      }
+    } finally {
+      this.setState({ progress: false })
     }
   }
 

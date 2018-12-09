@@ -1,7 +1,7 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import { Media } from 'react-bootstrap'
-import { Spinner } from './spinner'
+import { Spinner } from '../spinner'
 import { CommentComp } from './comment'
 import { CommentForm } from './comment-form'
 

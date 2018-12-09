@@ -1,8 +1,8 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import { Glyphicon, Button, Image } from 'react-bootstrap'
-import { Spinner } from './spinner'
-import { CommentBox } from './comment-box'
+import { Spinner } from '../spinner'
+import { CommentBox } from '../comments'
 
 interface State {
   fundeps: Partial<BasicCrudResponseBodyWithValidation<string>> | null
@@ -14,6 +14,7 @@ interface State {
         details?: string
       }
     | null
+  progress: boolean
 }
 
 export class FunDeps extends React.Component<{}, State> {
@@ -26,6 +27,7 @@ export class FunDeps extends React.Component<{}, State> {
       img: null,
       initialized: false,
       lastError: null,
+      progress: false,
     }
     this.init()
   }
@@ -54,6 +56,7 @@ export class FunDeps extends React.Component<{}, State> {
             <Button bsStyle="primary" type="submit">
               Сохранить
             </Button>
+            {this.state.progress ? <Spinner style={{ height: '2em' }} /> : null}
           </div>
         </form>
         {fundeps && fundeps.validationErrors ? (
@@ -121,18 +124,25 @@ export class FunDeps extends React.Component<{}, State> {
 
   private handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!this.state.fundeps || !this.state.fundeps.description) return
-    if (this.state.fundeps.id) {
-      // exists
-      const newFundeps = await api.putFunDep(
-        this.state.fundeps.id,
-        this.state.fundeps.description,
-      )
-      this.setState({ fundeps: newFundeps })
-    } else {
-      // create
-      const newFundeps = await api.postFunDep(this.state.fundeps.description)
-      this.setState({ fundeps: newFundeps })
+    if (!this.state.fundeps || !this.state.fundeps.description) {
+      throw new Error('Нечего сохранять!')
+    }
+    try {
+      this.setState({ progress: true })
+      if (this.state.fundeps.id) {
+        // exists
+        const newFundeps = await api.putFunDep(
+          this.state.fundeps.id,
+          this.state.fundeps.description,
+        )
+        this.setState({ fundeps: newFundeps })
+      } else {
+        // create
+        const newFundeps = await api.postFunDep(this.state.fundeps.description)
+        this.setState({ fundeps: newFundeps })
+      }
+    } finally {
+      this.setState({ progress: false })
     }
   }
 

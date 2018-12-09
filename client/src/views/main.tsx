@@ -9,11 +9,12 @@ import {
 } from 'react-router-dom'
 import { Grid, Row, Col, Button, Glyphicon } from 'react-bootstrap'
 import { TaskList } from './task-list'
-import { Topic } from './topic'
-import { Erd } from './erd'
-import { FunDeps } from './fundeps'
-import { RelSchema } from './relschema'
-import { SqlSchema } from './sqlschema'
+import { Topic } from './pages/topic'
+import { Erd } from './pages/erd'
+import { FunDeps } from './pages/fundeps'
+import { RelSchema } from './pages/relschema'
+import { SqlSchema } from './pages/sqlschema'
+import { ErrorComponent } from './error-component'
 
 export interface State {
   leftPanel: boolean
@@ -82,20 +83,19 @@ const toTop = () => {
 }
 
 export const Main = () => {
-  if (!sessionStorage.getItem('auth')) {
-    sessionStorage.setItem('return-url', location.href)
-  }
   return (
-    <Router>
-      <Switch>
-        <MainLayout path="/" exact component={TaskList} />
-        <MainLayout path="/login" component={Login} />
-        <PageLayout path="/topic" component={Topic} />
-        <PageLayout path="/erd" component={Erd} />
-        <PageLayout path="/fundeps" component={FunDeps} />
-        <PageLayout path="/relschema" component={RelSchema} />
-        <PageLayout path="/sqlschema" component={SqlSchema} />
-      </Switch>
-    </Router>
+    <ErrorComponent>
+      <Router>
+        <Switch>
+          <MainLayout path="/" exact component={TaskList} />
+          <MainLayout path="/login" component={Login} />
+          <PageLayout path="/topic" component={Topic} />
+          <PageLayout path="/erd" component={Erd} />
+          <PageLayout path="/fundeps" component={FunDeps} />
+          <PageLayout path="/relschema" component={RelSchema} />
+          <PageLayout path="/sqlschema" component={SqlSchema} />
+        </Switch>
+      </Router>
+    </ErrorComponent>
   )
 }

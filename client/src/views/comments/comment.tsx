@@ -1,5 +1,5 @@
 import * as React from 'react'
-import * as api from '../api'
+import * as api from '../../api'
 import { Button, Image, Media, Panel, Label, Clearfix } from 'react-bootstrap'
 import md5 = require('md5')
 import { CommentForm } from './comment-form'
