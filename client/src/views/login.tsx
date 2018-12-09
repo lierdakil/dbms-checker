@@ -41,20 +41,20 @@ export class Login extends React.Component<{}, State> {
       <form className="login-form" onSubmit={this.submit.bind(this)}>
         <FieldGroup
           id="login"
-          label="Login"
+          label="Имя пользователя"
           type="text"
           value={this.state.login}
           onChange={(e: any) => this.setState({ login: e.target.value })}
         />
         <FieldGroup
           id="password"
-          label="Password"
+          label="Пароль"
           type="password"
           value={this.state.password}
           onChange={(e: any) => this.setState({ password: e.target.value })}
         />
         <Button bsStyle="primary" type="submit">
-          Login
+          Войти
         </Button>
       </form>
     )
