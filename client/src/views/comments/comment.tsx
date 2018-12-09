@@ -82,7 +82,7 @@ export class CommentComp extends React.Component<Props, State> {
                     height={64}
                     src={`https://www.gravatar.com/avatar/${md5(
                       this.props.comment.commentAuthor.userInfoEmail.trim(),
-                    )}?s=64&d=identicon`}
+                    )}?s=64&d=retro&rating=g`}
                     alt={this.props.comment.commentAuthor.userInfoUsername}
                   />
                 </Media.Left>
