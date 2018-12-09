@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Alert, Row, Col } from 'react-bootstrap'
+import { Alert } from 'react-bootstrap'
 
 interface State {
   error:
