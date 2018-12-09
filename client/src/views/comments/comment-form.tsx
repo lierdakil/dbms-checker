@@ -69,9 +69,15 @@ export class CommentForm extends React.Component<Props, State> {
 
   private handleSubmit = async (e: any) => {
     e.preventDefault()
-    this.setState({ state: 'spinner' })
-    await this.props.handleSubmit(this.state.state, this.state.prio)
-    this.setState({ state: this.props.toggleable ? 'collapsed' : 'editor' })
+    if (!this.state.text) {
+      throw new Error('Пустой комментарий!')
+    }
+    try {
+      this.setState({ state: 'spinner' })
+      await this.props.handleSubmit(this.state.text, this.state.prio)
+    } finally {
+      this.setState({ state: this.props.toggleable ? 'collapsed' : 'editor' })
+    }
   }
 
   private handleReplyClick = () => {
