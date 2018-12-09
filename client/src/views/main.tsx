@@ -1,4 +1,5 @@
 import * as React from 'react'
+import * as api from '../api'
 import { Login } from './login'
 import {
   BrowserRouter as Router,
@@ -44,6 +45,23 @@ const DefaultLayout: React.Factory<LayoutProps> = (props) => {
 }
 
 const MainLayout: React.Factory<LayoutProps> = (props) => {
+  api.getUserSessionOrLogin()
+  const { component: Component, ...rest } = props!
+  return (
+    <DefaultLayout
+      {...rest}
+      component={(matchProps) => (
+        <Row>
+          <Col md={12}>
+            <Component {...matchProps} />
+          </Col>
+        </Row>
+      )}
+    />
+  )
+}
+
+const LoginLayout: React.Factory<LayoutProps> = (props) => {
   const { component: Component, ...rest } = props!
   return (
     <DefaultLayout
@@ -88,8 +106,8 @@ export const Main = () => {
       <ErrorComponent>
         <Router>
           <Switch>
+            <LoginLayout path="/login" component={Login} />
             <MainLayout path="/" exact component={TaskList} />
-            <MainLayout path="/login" component={Login} />
             <PageLayout path="/topic" component={Topic} />
             <PageLayout path="/erd" component={Erd} />
             <PageLayout path="/fundeps" component={FunDeps} />
