@@ -75,7 +75,8 @@ export class Erd extends React.Component<{}, State> {
         {this.state.lastError ? (
           <>
             <Button onClick={this.dismissError}>
-              <Glyphicon glyph="cancel" />
+              <Glyphicon glyph="remove" />
+              Скрыть сообщение об ошибке
             </Button>
             <pre style={{ backgroundColor: '#ffdddd' }}>
               {this.state.lastError.details || this.state.lastError.message}
@@ -148,7 +149,7 @@ export class Erd extends React.Component<{}, State> {
     }
   }
 
-  private dismissError() {
+  private dismissError = () => {
     this.setState({ lastError: null })
   }
 }
