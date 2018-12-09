@@ -34,11 +34,11 @@ checkCreds :: JWTSettings
            -> Env UserSessionData
 checkCreds jwtCfg AuthData{..} = bracketDB $ do
   (rel :: [User]) <- fromRelation =<< execDB [tutdrel|User where username = $authLogin|]
-  when (null rel) $ throwError err401
+  when (null rel) $ throwError err
   let User{saltedPasswordHash} = head rel
   let bspw = BL8.toStrict $ LTE.encodeUtf8 $ LT.fromStrict authPassword
       bshs = saltedPasswordHash
-  when (not $ validatePassword bspw bshs) $ throwError err401
+  when (not $ validatePassword bspw bshs) $ throwError err
   let usr = UserSessionData {
         userSessionUserInfo = toResponseBody $ head rel
       , userSessionKey = ""
@@ -47,3 +47,7 @@ checkCreds jwtCfg AuthData{..} = bracketDB $ do
   expirationDateTime <- Just . addUTCTime sd <$> liftIO getCurrentTime
   key <- BL8.unpack <$> (handle =<< liftIO (makeJWT usr jwtCfg expirationDateTime))
   return usr {userSessionKey = key}
+  where
+    err = err401{
+      errBody = LTE.encodeUtf8 $ "Неверное имя пользователя и/или пароль"
+      }
