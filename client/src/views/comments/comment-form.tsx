@@ -75,6 +75,7 @@ export class CommentForm extends React.Component<Props, State> {
     try {
       this.setState({ state: 'spinner' })
       await this.props.handleSubmit(this.state.text, this.state.prio)
+      this.setState({ text: '', prio: 'CommentStatusNormal' })
     } finally {
       this.setState({ state: this.props.toggleable ? 'collapsed' : 'editor' })
     }
@@ -85,7 +86,12 @@ export class CommentForm extends React.Component<Props, State> {
   }
 
   private handleCancel = () => {
-    if (this.props.toggleable) this.setState({ state: 'collapsed' })
+    if (this.props.toggleable)
+      this.setState({
+        state: 'collapsed',
+        text: '',
+        prio: 'CommentStatusNormal',
+      })
   }
 
   private handleResponseTextChange = (evt: any) => {
