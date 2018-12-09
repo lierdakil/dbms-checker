@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Button, Alert } from 'react-bootstrap'
+import { Alert, Row, Col } from 'react-bootstrap'
 
 interface State {
   error:
@@ -23,20 +23,21 @@ export class ErrorComponent extends React.Component<{}, State> {
     return (
       <>
         {this.state.error !== null ? (
-          <Alert bsStyle="danger" onDismiss={this.handleDismiss}>
-            <h4>
-              {this.state.error.code ? (
-                <>Произошла ошибка {this.state.error.code}: </>
-              ) : null}
-              {this.state.error.message}
-            </h4>
-            {this.state.error.details ? (
-              <p>{this.state.error.details}</p>
-            ) : null}
-            <p>
-              <Button onClick={this.handleDismiss}>Скрыть сообщение</Button>
-            </p>
-          </Alert>
+          <Row>
+            <Col md={12}>
+              <Alert bsStyle="danger" onDismiss={this.handleDismiss}>
+                <h4>
+                  {this.state.error.code ? (
+                    <>Произошла ошибка {this.state.error.code}: </>
+                  ) : null}
+                  {this.state.error.message}
+                </h4>
+                {this.state.error.details ? (
+                  <p>{this.state.error.details}</p>
+                ) : null}
+              </Alert>
+            </Col>
+          </Row>
         ) : null}
         {this.props.children}
       </>

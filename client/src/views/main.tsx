@@ -30,14 +30,14 @@ const DefaultLayout: React.Factory<LayoutProps> = (props) => {
     <Route
       {...rest}
       render={(matchProps) => (
-        <Grid>
+        <>
           <Row>
             <Button onClick={toTop}>
               <Glyphicon glyph="home" />
             </Button>
           </Row>
           <Component {...matchProps} />
-        </Grid>
+        </>
       )}
     />
   )
@@ -84,18 +84,20 @@ const toTop = () => {
 
 export const Main = () => {
   return (
-    <ErrorComponent>
-      <Router>
-        <Switch>
-          <MainLayout path="/" exact component={TaskList} />
-          <MainLayout path="/login" component={Login} />
-          <PageLayout path="/topic" component={Topic} />
-          <PageLayout path="/erd" component={Erd} />
-          <PageLayout path="/fundeps" component={FunDeps} />
-          <PageLayout path="/relschema" component={RelSchema} />
-          <PageLayout path="/sqlschema" component={SqlSchema} />
-        </Switch>
-      </Router>
-    </ErrorComponent>
+    <Grid>
+      <ErrorComponent>
+        <Router>
+          <Switch>
+            <MainLayout path="/" exact component={TaskList} />
+            <MainLayout path="/login" component={Login} />
+            <PageLayout path="/topic" component={Topic} />
+            <PageLayout path="/erd" component={Erd} />
+            <PageLayout path="/fundeps" component={FunDeps} />
+            <PageLayout path="/relschema" component={RelSchema} />
+            <PageLayout path="/sqlschema" component={SqlSchema} />
+          </Switch>
+        </Router>
+      </ErrorComponent>
+    </Grid>
   )
 }
