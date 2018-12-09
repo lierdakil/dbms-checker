@@ -23,21 +23,27 @@ export class ErrorComponent extends React.Component<{}, State> {
     return (
       <>
         {this.state.error !== null ? (
-          <Row>
-            <Col md={12}>
-              <Alert bsStyle="danger" onDismiss={this.handleDismiss}>
-                <h4>
-                  {this.state.error.code ? (
-                    <>Произошла ошибка {this.state.error.code}: </>
-                  ) : null}
-                  {this.state.error.message}
-                </h4>
-                {this.state.error.details ? (
-                  <p>{this.state.error.details}</p>
-                ) : null}
-              </Alert>
-            </Col>
-          </Row>
+          <Alert
+            bsStyle="danger"
+            onDismiss={this.handleDismiss}
+            style={{
+              position: 'fixed',
+              width: '50%',
+              zIndex: 1000,
+              right: 0,
+              maxWidth: '35em',
+            }}
+          >
+            <h4>
+              {this.state.error.code ? (
+                <>Произошла ошибка {this.state.error.code}: </>
+              ) : null}
+              {this.state.error.message}
+            </h4>
+            {this.state.error.details ? (
+              <p>{this.state.error.details}</p>
+            ) : null}
+          </Alert>
         ) : null}
         {this.props.children}
       </>
