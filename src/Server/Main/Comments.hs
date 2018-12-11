@@ -118,10 +118,10 @@ checkItemOwnership parent = do
   -- check if user owns the parent item in question
   uId <- asks (userSessionUserId . sessionData)
   count <- cardinality <$> execDB [tutdrel|(
-          relation{tuple{id ParentTopicSelection $uId}}
-    union ((ERDiagram where userId = $uId){id}:{id:=ParentERD id})
-    union ((FunctionalDependencies where userId = $uId){id}:{id:=ParentFunDep id})
-    union ((RelationalSchema where userId = $uId){id}:{id:=ParentRelSchema id})
-    union ((PhysicalSchema where userId = $uId){id}:{id:=ParentPhysSchema id})
-    ) where id = $parent|]
+          relation{tuple{pid ParentTopicSelection $uId}}
+    union ((ERDiagram where userId = $uId){id}:{pid:=ParentERD @id}){pid}
+    union ((FunctionalDependencies where userId = $uId){id}:{pid:=ParentFunDep @id}){pid}
+    union ((RelationalSchema where userId = $uId){id}:{pid:=ParentRelSchema @id}){pid}
+    union ((PhysicalSchema where userId = $uId){id}:{pid:=ParentPhysSchema @id}){pid}
+    ) where pid = $parent|]
   when (count /= Finite 1) $ throwError err403
