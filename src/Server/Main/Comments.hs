@@ -117,11 +117,12 @@ checkItemOwnership :: ParentItemIdentifier -> DBContextT SessionEnv ()
 checkItemOwnership parent = do
   -- check if user owns the parent item in question
   uId <- asks (userSessionUserId . sessionData)
-  count <- cardinality <$> execDB [tutdrel|(
-          relation{tuple{pid ParentTopicSelection $uId}}
-    union ((ERDiagram where userId = $uId){id}:{pid:=ParentERD @id}){pid}
-    union ((FunctionalDependencies where userId = $uId){id}:{pid:=ParentFunDep @id}){pid}
-    union ((RelationalSchema where userId = $uId){id}:{pid:=ParentRelSchema @id}){pid}
-    union ((PhysicalSchema where userId = $uId){id}:{pid:=ParentPhysSchema @id}){pid}
-    ) where pid = $parent|]
-  when (count /= Finite 1) $ throwError err403
+  let exists = (/= Finite 0) . cardinality
+      query rel iid = execDB $ [tutdrel|($rel where userId = $uId and id = $iid){}|]
+  isOwner <- case parent of
+    ParentTopicSelection tuId -> return $ tuId == uId
+    ParentERD iid -> exists <$> query [tutdrel|ERDiagram|] iid
+    ParentFunDep iid -> exists <$> query [tutdrel|FunctionalDependencies|] iid
+    ParentRelSchema iid -> exists <$> query [tutdrel|RelationalSchema|] iid
+    ParentPhysSchema iid -> exists <$> query [tutdrel|PhysicalSchema|] iid
+  when (not isOwner) $ throwError err403
