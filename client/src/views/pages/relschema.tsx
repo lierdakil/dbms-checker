@@ -68,7 +68,7 @@ export class RelSchema extends React.Component<{}, State> {
         {this.state.relschema && this.state.relschema.id ? (
           <CommentBox
             parentItem={{
-              tag: 'ParentERD',
+              tag: 'ParentRelSchema',
               contents: this.state.relschema.id,
             }}
           />

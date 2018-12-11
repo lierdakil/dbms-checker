@@ -95,7 +95,7 @@ export class FunDeps extends React.Component<{}, State> {
         {this.state.fundeps && this.state.fundeps.id ? (
           <CommentBox
             parentItem={{
-              tag: 'ParentERD',
+              tag: 'ParentFunDep',
               contents: this.state.fundeps.id,
             }}
           />

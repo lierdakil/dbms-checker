@@ -91,7 +91,7 @@ export class SqlSchema extends React.Component<{}, State> {
         {this.state.sqlschema && this.state.sqlschema.id ? (
           <CommentBox
             parentItem={{
-              tag: 'ParentERD',
+              tag: 'ParentPhysSchema',
               contents: this.state.sqlschema.id,
             }}
           />
