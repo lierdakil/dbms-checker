@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Algo.FDTools.Parse
-  ( parseGraph
+  ( parseGraph, vertex
   ) where
 
 import Algo.FDTools.Types

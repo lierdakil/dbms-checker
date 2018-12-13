@@ -1,19 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -Wall #-}
 
-module Algo.FDTools.Util
-  ( minimize
-  , expand
-  , fullext
-  , superkeys
-  , potkeys
-  , nontrivial
-  , project
-  , nfbc
-  , nf3
-  , allvs
-  , getUnderiveable
-  ) where
+module Algo.FDTools.Util where
 
 import Algo.FDTools.Types
 import qualified Data.HashSet as S
@@ -22,6 +10,7 @@ import Control.Monad
 import Data.Hashable
 import Data.Function
 import Data.List
+import Control.Arrow
 
 minimize :: Graph -> Graph
 minimize = minimize' M.empty . nontrivial
@@ -57,8 +46,8 @@ isSubsetOf sub sup = S.foldl' (\acc x -> acc && x `S.member` sup) True sub
 isProperSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
 isProperSubsetOf sub sup = S.size sub < S.size sup && isSubsetOf sub sup
 
-expand :: Graph -> S.HashSet Edge
-expand = S.unions . map (\(l,r) -> S.map (\x -> (l, S.singleton x)) r) . M.toList
+expand :: Graph -> [(VertexList, Vertex)]
+expand = concatMap (\(l,r) -> map (\x -> (l, x)) $ S.toList r) . M.toList
 
 closure :: VertexList -> Graph -> VertexList
 closure x s =
@@ -77,21 +66,38 @@ allvs g = S.unions $ M.keys g <> M.elems g
 
 powerset :: (Eq a, Hashable a) => S.HashSet a -> S.HashSet (S.HashSet a)
 powerset = S.fromList . fmap S.fromList . listPowerset . S.toList
-  where
-  listPowerset :: [a] -> [[a]]
-  listPowerset = filterM (const [True, False])
+
+listPowerset :: [a] -> [[a]]
+listPowerset = filterM (const [True, False])
 
 closureToFDs :: Graph -> VertexList -> Edge
 closureToFDs g x = (x, closure x g)
 
-superkeys :: Graph -> S.HashSet Edge
-superkeys g = S.map (\x -> (x, avs)) $ S.filter (\x -> closure x g == avs) $ powerset als
+superkeys :: Graph -> S.HashSet VertexList
+superkeys g = S.filter (\x -> closure x g == avs) $ powerset als
   where
     als = S.unions $ M.keys g
     avs = allvs g
 
-potkeys :: S.HashSet Edge -> S.HashSet Edge
-potkeys sk = S.filter (\x -> all (not . (`isProperSubsetOf` fst x) . fst) $ S.toList sk) sk
+potkeys :: S.HashSet VertexList -> S.HashSet VertexList
+potkeys sk = S.filter (\x -> all (not . (`isProperSubsetOf` x)) $ S.toList sk) sk
+
+elementarykeys :: Graph -> S.HashSet VertexList
+elementarykeys efds = S.fromList $ M.keys efds
+
+elementaryFDs :: Graph -> Graph
+elementaryFDs g = M.fromListWith (<>) $ concatMap (uncurry elementaryFDsFromFD) $ M.toList g
+  where
+    elementaryFDsFromFD lhs rhs = elementaryFDsFromFD' lhs $ S.toList rhs
+    elementaryFDsFromFD' lhs rhs = do
+      l <- S.toList lhs
+      let reducedLhs = S.delete l lhs
+          cls = closure reducedLhs g
+          (deriv, notDeriv) = partition (`S.member` cls) rhs
+          rest = elementaryFDsFromFD' reducedLhs deriv
+      if null notDeriv
+      then rest
+      else (reducedLhs, S.fromList notDeriv):rest
 
 nontrivial :: Graph -> Graph
 nontrivial = M.mapMaybeWithKey removeTrivialFromLeftSide
@@ -105,19 +111,20 @@ project :: VertexList -> Graph -> Graph
 project p = M.map (S.intersection p)
           . M.filterWithKey (\f _ -> f `isSubsetOf` p)
 
-nfbc :: Graph -> Graph -> Graph
-nfbc g sk = M.filterWithKey (\f _ -> not $ f `S.member` sks) g
-  where
-    sks = S.fromList $ M.keys sk
+nfbc :: Graph -> S.HashSet VertexList -> Graph
+nfbc g sks = M.filterWithKey (\f _ -> not $ f `S.member` sks) g
 
-nf3 :: Graph -> Graph -> Graph
-nf3 nfbc' pk = M.mapMaybe fdSatisfies3NF $ nfbc'
+nfek :: Graph -> S.HashSet VertexList -> Graph
+nfek nfbc' ek = M.filter fdSatisfiesNFEK $ nfbc'
   where
-    kas = S.unions $ M.keys pk
-    fdSatisfies3NF rhs =
-      case rhs `S.difference` kas of
-        x | S.null x -> Nothing
-          | otherwise -> Just x
+    ekas = S.foldr (S.union) S.empty ek
+    fdSatisfiesNFEK rhs = not $ S.null $ rhs `S.difference` ekas
+
+nf3 :: Graph -> S.HashSet VertexList -> Graph
+nf3 nfbc' pk = M.filter fdSatisfies3NF $ nfbc'
+  where
+    kas = S.foldr (S.union) S.empty pk
+    fdSatisfies3NF rhs = not $ S.null $ rhs `S.difference` kas
 
 -- normalize :: Graph -> Graph -> Either [[Vertex]] [[Vertex]]
 -- normalize g invFD = checkErr
