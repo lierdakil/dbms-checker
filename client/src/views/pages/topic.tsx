@@ -119,8 +119,8 @@ export class Topic extends React.Component<{}, State> {
   private handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!this.state.userTopic) throw new Error('Тема не задана')
-    this.setState({ progress: true })
     try {
+      this.setState({ progress: true })
       const topic = this.state.userTopic
       if (topic.tag === 'AssignedTopicInfoCustom') {
         let newTopic

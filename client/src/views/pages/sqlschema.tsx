@@ -113,6 +113,7 @@ export class SqlSchema extends React.Component<{}, State> {
       throw new Error('Нечего сохранять!')
     }
     try {
+      this.setState({ progress: true })
       if (this.state.sqlschema.id) {
         // exists
         const newSQLSchema = await api.putSQLSchema(

@@ -90,6 +90,7 @@ export class RelSchema extends React.Component<{}, State> {
       throw new Error('Нечего сохранять!')
     }
     try {
+      this.setState({ progress: true })
       if (this.state.relschema.id) {
         // exists
         const newRelSchema = await api.putRelSchema(
