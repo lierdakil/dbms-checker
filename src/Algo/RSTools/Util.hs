@@ -9,14 +9,15 @@ import Data.List
 import qualified Data.List.NonEmpty as NE
 import Data.List.NonEmpty (NonEmpty(..))
 
-fdsFromRelSchema :: Relations -> Graph
-fdsFromRelSchema (Relations rels) = M.fromListWith (<>)
-  $ map relationFDs
-  $ S.toList rels
-  where
-    relationFDs (Relation attr) = (S.fromList $ map attributeName lhsa
-                                 , S.fromList $ map attributeName rhsa)
-      where (lhsa, rhsa) = partition attributeIsKey $ S.toList attr
+relationFDs :: Relation -> Maybe Graph
+relationFDs (Relation attr)
+  | null lhsa
+  = Nothing
+  | otherwise
+  = Just $ M.singleton
+      (S.fromList $ map attributeName lhsa)
+      (S.fromList $ map attributeName rhsa)
+  where (lhsa, rhsa) = partition attributeIsKey $ S.toList attr
 
 relProject :: Relation -> Graph -> Graph
 relProject (Relation attrs) allFDs = project (S.map attributeName attrs) allFDs

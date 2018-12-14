@@ -131,14 +131,28 @@ errMissingFDs allFDs relSchemaWithFDs = map showMissing (M.toList missing)
     = LT.toStrict $ "В списке функциональных зависимостей присутствует\n"
     <> edgeToString fd <> ",\nно она теряется в реляционной схеме"
 
+data ExtraFDsErr = NoPK Relation | ExtraFDs Relation Graph
+
 errExtraFDs :: Graph -> Relations -> [Text]
-errExtraFDs allFDs relSchema = map showExtraneous (M.toList extraneous)
+errExtraFDs allFDs (Relations rels) = map showExtraneous extraneous
   where
-  extraneous = getUnderiveable fdsFromRS allFDs
-  fdsFromRS = fdsFromRelSchema relSchema
-  showExtraneous fd
-    = LT.toStrict $ "В реляционной схеме присутствует ФЗ\n"
-    <> edgeToString fd <> ",\nно она отсутствует в списке функциональных зависимостей"
+  extraneous = mapMaybe underviableRelFDs $ S.toList rels
+  underviableRelFDs rel
+    = case flip getUnderiveable allFDs <$> relationFDs rel of
+      Nothing -> Just $ NoPK rel
+      Just m
+        | M.null m -> Nothing
+        | otherwise -> Just $ ExtraFDs rel m
+  showExtraneous (NoPK rel)
+    = LT.toStrict $ "В отношении\n"
+    <> relToString rel
+    <> "отсутствует первичный ключ"
+  showExtraneous (ExtraFDs rel fds)
+    = LT.toStrict $ "В отношении\n"
+    <> relToString rel
+    <> "присутствуют ФЗ\n"
+    <> graphToString fds
+    <> ",\nкоторых не было в исходном списке"
 
 errNFEKRelations :: Graph -> S.HashSet (Relation, Graph) -> [Text]
 errNFEKRelations allFDs relSchemaWithFDs = map showRelNotNFEK relsNotNFEK
