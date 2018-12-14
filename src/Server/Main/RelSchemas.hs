@@ -34,8 +34,6 @@ import Text.Megaparsec
 import qualified Data.HashSet as S
 import qualified Data.HashMap.Strict as M
 import Data.Maybe
-import qualified Data.Binary as B
-import qualified Data.ByteString.Lazy as BL
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import qualified Data.List as L
@@ -108,70 +106,13 @@ validateRelSchema iid desc = do
               parseErrorPretty' funDeps err)
             }
       parsedFDs <- either fdSyntaxError pure $ parseGraph $ LT.fromStrict funDeps
-      let allrelfds = allRelationFDs parsedFDs schemaFromUser
-          missing = getUnderiveable parsedFDs fdsPreservedInRS
-          extraneous = getUnderiveable fdsFromRS parsedFDs
-          fdsPreservedInRS = S.foldr (\x y -> M.unionWith (<>) (snd x) y) M.empty $ allrelfds
-          fdsFromRS = fdsFromRelSchema schemaFromUser
-          attrMap = allAttrMap schemaFromUser
-          attrsWithDifferentDomain = M.filter
-              (\(h :| t) -> any (domainDiffersFrom h) t)
-              attrMap
-          domainDiffersFrom = (/=) `on` (attributeDomain . snd)
-          samePK
-            = M.filter (\x -> S.size x > 1)
-            $ M.fromListWith (<>) $ map relToPK $ S.toList $ relationsSet schemaFromUser
-          relToPK rel = (pk, S.singleton rel)
-            where pk = S.filter attributeIsKey $ relationAttributes rel
-          notLosslessJoin = filter pairNotLosslesJoin $ pairs $ S.toList $ relationsSet schemaFromUser
-          pairNotLosslesJoin (Relation a', Relation b')
-            | S.null intsctn
-            = False
-            | otherwise
-            = not (a `isSubsetOf` cls || b `isSubsetOf` cls)
-            where
-              a = S.map attributeName a'
-              b = S.map attributeName b'
-              intsctn = S.intersection a b
-              cls = closure intsctn unionfds
-              unionfds = project (S.union a b) parsedFDs
-          pairs :: [a] -> [(a, a)]
-          pairs l = [(x,y) | (x:ys) <- L.tails l, y <- ys]
-          efds = elementaryFDs parsedFDs
-          relsNotNFEK = mapMaybe maybeRelInNFEK $ S.toList allrelfds
-          maybeRelInNFEK rel = case relFDsNotInNFEK efds rel of
-            x | M.null x -> Nothing
-              | otherwise -> Just (fst rel, x)
-          errors = map showMissing (M.toList missing)
-                <> map showExtraneous (M.toList extraneous)
-                <> map showRelNotNFEK relsNotNFEK
-                <> map showNotLosslesJoin notLosslessJoin
-                <> map showSamePK (M.elems samePK)
-                <> map differningDomain (M.toList attrsWithDifferentDomain)
-          differningDomain (vtx, lst)
-            = LT.toStrict $ "Атрибут " <> vertexToString vtx <> " встречается в отношениях\n"
-            <> LT.intercalate ",\n" (FL.toList $ NE.map (relToString . fst) lst)
-            <> ",\nи имеет в них разные домены."
-          showNotLosslesJoin (r1, r2)
-            = LT.toStrict $ "Отношения\n"
-            <> relToString r1
-            <> ",\n"
-            <> relToString r2
-            <> "\nимеют общие атрибуты но не являются декомпозицией без потерь."
-          showSamePK rl
-            = LT.toStrict $ "Отношения\n"
-            <> LT.intercalate ",\n" (map relToString $ S.toList rl)
-            <> "\nимеют одинаковый первичный ключ."
-          showExtraneous fd
-            = LT.toStrict $ "В реляционной схеме присутствует ФЗ\n"
-            <> edgeToString fd <> ",\nно она отсутствует в списке функциональных зависимостей"
-          showMissing fd
-            = LT.toStrict $ "В списке функциональных зависимостей присутствует\n"
-            <> edgeToString fd <> ",\nно она теряется в реляционной схеме"
-          showRelNotNFEK (rel, nonNFEKFDs)
-            = LT.toStrict $ "Отношение " <> relToString rel <> " не находится в НФЭК.\n" <>
-              "Функциональные зависимости противоречащие НФЭК: \n" <>
-              graphToString nonNFEKFDs
+      let relSchemaWithFDs = allRelationFDs parsedFDs schemaFromUser
+          errors = errMissingFDs parsedFDs relSchemaWithFDs
+                <> errExtraFDs parsedFDs schemaFromUser
+                <> errNFEKRelations parsedFDs relSchemaWithFDs
+                <> errLosslessJoin parsedFDs schemaFromUser
+                <> errSamePK schemaFromUser
+                <> errConflictingDomain schemaFromUser
       bracketDB $ do
         execDB [tutdctx|update RelationalSchema where id = $iid (validationErrors := $errors)|]
       return BasicCrudResponseBodyWithValidation {
@@ -179,3 +120,85 @@ validateRelSchema iid desc = do
         , description = desc
         , validationErrors = errors
         }
+
+errMissingFDs :: Graph
+              -> S.HashSet (a, M.HashMap VertexList VertexList) -> [Text]
+errMissingFDs allFDs relSchemaWithFDs = map showMissing (M.toList missing)
+  where
+  missing = getUnderiveable allFDs fdsPreservedInRS
+  fdsPreservedInRS = S.foldr (\x y -> M.unionWith (<>) (snd x) y) M.empty $ relSchemaWithFDs
+  showMissing fd
+    = LT.toStrict $ "В списке функциональных зависимостей присутствует\n"
+    <> edgeToString fd <> ",\nно она теряется в реляционной схеме"
+
+errExtraFDs :: Graph -> Relations -> [Text]
+errExtraFDs allFDs relSchema = map showExtraneous (M.toList extraneous)
+  where
+  extraneous = getUnderiveable fdsFromRS allFDs
+  fdsFromRS = fdsFromRelSchema relSchema
+  showExtraneous fd
+    = LT.toStrict $ "В реляционной схеме присутствует ФЗ\n"
+    <> edgeToString fd <> ",\nно она отсутствует в списке функциональных зависимостей"
+
+errNFEKRelations :: Graph -> S.HashSet (Relation, Graph) -> [Text]
+errNFEKRelations allFDs relSchemaWithFDs = map showRelNotNFEK relsNotNFEK
+  where
+  showRelNotNFEK (rel, nonNFEKFDs)
+    = LT.toStrict $ "Отношение " <> relToString rel <> " не находится в НФЭК.\n" <>
+      "Функциональные зависимости противоречащие НФЭК: \n" <>
+      graphToString nonNFEKFDs
+  relsNotNFEK = mapMaybe maybeRelInNFEK $ S.toList relSchemaWithFDs
+  maybeRelInNFEK rel = case relFDsNotInNFEK efds rel of
+    x | M.null x -> Nothing
+      | otherwise -> Just (fst rel, x)
+  efds = elementaryFDs allFDs
+
+errLosslessJoin :: Graph -> Relations -> [Text]
+errLosslessJoin allFDs relSchema = map showNotLosslesJoin notLosslessJoin
+  where
+  notLosslessJoin = filter pairNotLosslesJoin $ allPairs $ S.toList $ relationsSet relSchema
+  pairNotLosslesJoin (Relation a', Relation b')
+    | S.null intsctn
+    = False
+    | otherwise
+    = not (a `isSubsetOf` cls || b `isSubsetOf` cls)
+    where
+    a = S.map attributeName a'
+    b = S.map attributeName b'
+    intsctn = S.intersection a b
+    cls = closure intsctn unionfds
+    unionfds = project (S.union a b) allFDs
+  showNotLosslesJoin (r1, r2)
+    = LT.toStrict $ "Отношения\n"
+    <> relToString r1
+    <> ",\n"
+    <> relToString r2
+    <> "\nимеют общие атрибуты, но не являются декомпозицией без потерь."
+
+allPairs :: [a] -> [(a, a)]
+allPairs l = [(x,y) | (x:ys) <- L.tails l, y <- ys]
+
+errSamePK :: Relations -> [Text]
+errSamePK relSchema = map showSamePK (M.elems samePK)
+  where
+  samePK = M.filter (\x -> S.size x > 1)
+         $ M.fromListWith (<>) $ map relToPK
+         $ S.toList $ relationsSet relSchema
+  relToPK rel = (S.filter attributeIsKey $ relationAttributes rel, S.singleton rel)
+  showSamePK rl
+    = LT.toStrict $ "Отношения\n"
+    <> LT.intercalate ",\n" (map relToString $ S.toList rl)
+    <> "\nимеют одинаковый первичный ключ."
+
+errConflictingDomain :: Relations -> [Text]
+errConflictingDomain relSchema = map differningDomain (M.toList attrsWithDifferentDomain)
+  where
+  attrMap = allAttrMap relSchema
+  attrsWithDifferentDomain = M.filter
+      (\(h :| t) -> any (domainDiffersFrom h) t)
+      attrMap
+  domainDiffersFrom = (/=) `on` (attributeDomain . snd)
+  differningDomain (vtx, lst)
+    = LT.toStrict $ "Атрибут " <> vertexToString vtx <> " встречается в отношениях\n"
+    <> LT.intercalate ",\n" (FL.toList $ NE.map (relToString . fst) lst)
+    <> ",\nи имеет в них разные домены."
