@@ -23,15 +23,16 @@ data DataType = TypeChar Word
 data ColumnAttr = NotNull | PrimaryKey
     deriving (Eq, Generic, Hashable)
 data Column = Column {
-      columnName :: Vertex
+      columnName :: Text
     , columnType :: DataType
     , columnAttrs :: [ColumnAttr]
     } deriving (Eq, Generic, Hashable)
 data FKAction = NoAction | ActionSetNull | ActionRestrict | ActionCascade
     deriving (Eq, Generic, Hashable)
-data TableAttr = TablePrimaryKey [Vertex] | TableForeignKey {
-    fkCols :: [Vertex]
-  , fkRefCols :: [Vertex]
+data TableAttr = TablePrimaryKey [Text] | TableForeignKey {
+    fkCols :: [Text]
+  , fkRefTbl :: Text
+  , fkRefCols :: [Text]
   , fkOnUpdate :: FKAction
   , fkOnDelete :: FKAction
   } deriving (Eq, Generic, Hashable)

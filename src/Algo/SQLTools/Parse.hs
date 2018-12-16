@@ -4,7 +4,6 @@ module Algo.SQLTools.Parse
   ) where
 
 import Algo.SQLTools.Types
-import Algo.FDTools.Types
 import Algo.Common.Parse
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (space, spaceChar)
@@ -25,12 +24,12 @@ table = do
   try (onlyCols id') <|> colsAndAttrs id'
   where
   onlyCols id' = do
-    cols <- try (column id') `sepBy1` (space *> char ',' <* space)
+    cols <- try column `sepBy1` (space *> char ',' <* space)
     space
     void $ char ')'
     return $ Table id' cols []
   colsAndAttrs id' = do
-    cols <- try (column id') `endBy1` (space *> char ',' <* space)
+    cols <- try column `endBy1` (space *> char ',' <* space)
     space
     attrs <- tableAttr id' `sepBy1` (space *> char ',' <* space)
     space
@@ -41,12 +40,9 @@ sqlIdent :: Parser T.Text
 sqlIdent = char '"' *> ident <* char '"'
        <|> identNoSpace
 
-colName :: T.Text -> Parser Vertex
-colName tblName = flip Vertex tblName <$> sqlIdent
-
-column :: T.Text -> Parser Column
-column tblName = do
-  id' <- colName tblName
+column :: Parser Column
+column = do
+  id' <- sqlIdent
   space
   typ <- datatype
   space
@@ -125,20 +121,20 @@ tableAttr tblName = tablePrimaryKey <|> tableForeignKey
   where
   tablePrimaryKey = TablePrimaryKey <$> (
     string' "primary key" *> space *> char '(' *> space *> (
-      colName tblName `sepBy1` (space *> char ',' <* space)
+      sqlIdent `sepBy1` (space *> char ',' <* space)
       ) <* space <* char ')')
   tableForeignKey = do
     ctr <- TableForeignKey <$> (
           string' "foreign key" *> space *> char '(' *> space *>
-          colName tblName `sepBy1` (space *> char ',' <* space)
+          sqlIdent `sepBy1` (space *> char ',' <* space)
           <* space <* char ')' <* space <* string' "references")
     refid <- sqlIdent
     space
     refcol <- char '(' *> space
-              *> colName refid `sepBy1` (space *> char ',' <* space)
+              *> sqlIdent `sepBy1` (space *> char ',' <* space)
               <* space <* char ')'
     space
-    uncurry (ctr refcol) <$> updateDelete
+    uncurry (ctr refid refcol) <$> updateDelete
   fkAction = string' "no action" *> pure NoAction
          <|> string' "set null" *> pure ActionSetNull
          <|> string' "restrict" *> pure ActionRestrict

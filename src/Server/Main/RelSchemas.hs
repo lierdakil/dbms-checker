@@ -12,6 +12,7 @@ import Data.Text (Text)
 import Control.Monad.Reader
 import Config
 import API
+import Util
 import API.Types
 import DB.Types
 import Servant
@@ -188,9 +189,6 @@ errLosslessJoin allFDs relSchema = map showNotLosslesJoin notLosslessJoin
     <> ",\n"
     <> relToString r2
     <> "\nимеют общие атрибуты, но не являются декомпозицией без потерь."
-
-allPairs :: [a] -> [(a, a)]
-allPairs l = [(x,y) | (x:ys) <- L.tails l, y <- ys]
 
 errSamePK :: Relations -> [Text]
 errSamePK relSchema = map showSamePK (M.elems samePK)

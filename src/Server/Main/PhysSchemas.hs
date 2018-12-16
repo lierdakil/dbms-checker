@@ -11,6 +11,7 @@ import Data.Text (Text)
 import Control.Monad.Reader
 import Config
 import API
+import Util
 import API.Types
 import DB.Types
 import Servant
@@ -19,6 +20,7 @@ import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
 import Algo.SQLTools.Parse
+import Algo.SQLTools.Types
 import Algo.RSTools.Parse
 import Algo.RSTools.Types
 import Algo.RSTools.Util
@@ -103,9 +105,64 @@ validatePhysSchema iid desc =
       , accepted = NotAccepted
       }
     Right schemaFromUser -> do
+      let tablesMap = M.fromList $ map (\t -> (tableName t, (colMap t, t))) schemaFromUser
+          colMap Table{..} = M.fromList $ map (\c -> (columnName c, c)) tableCols
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
         id = iid
       , description = desc
-      , validationErrors = []
+      , validationErrors = checkDuplicateTables schemaFromUser
+                        <> concatMap checkDuplicateColumns schemaFromUser
+                        <> concatMap (checkForeignKeys tablesMap) schemaFromUser
       , accepted = NotAccepted
       }
+
+checkDuplicateTables :: [Table] -> [Text]
+checkDuplicateTables schema =
+  map showDupTables $ filter (uncurry ((==) `on` tableName)) $ allPairs schema
+  where
+  showDupTables (a, _) = LT.toStrict $ "Две таблицы с одинаковым именем " <> tableName a
+
+checkDuplicateColumns :: Table -> [Text]
+checkDuplicateColumns Table{..} =
+  map showDupCol $ filter (uncurry ((==) `on` columnName)) $ allPairs tableCols
+  where
+  showDupCol (a, _) = LT.toStrict $
+    "В таблице " <> tableName <> " две колонки с именем " <> columnName a
+
+checkForeignKeys :: M.HashMap LT.Text (M.HashMap LT.Text Column, b)
+                    -> Table -> [Text]
+checkForeignKeys tm Table{..}
+  = concatMap checkFKAttr tableAttrs
+  where
+  err desc =
+    LT.toStrict $ "Неверное ограничение внешнего ключа в таблице " <> tableName <> ":\n" <> desc
+  checkFKAttr TableForeignKey{..} =
+    if length fkCols /= length fkRefCols
+    then [err "количество столбцов не совпадает"]
+    else
+      case M.lookup fkRefTbl tm of
+        Nothing -> [err $ "таблица " <> fkRefTbl <> " не существует"]
+        Just (rt, _) -> concatMap (checkDomains fkRefTbl rt) (zip fkCols fkRefCols)
+  checkFKAttr _ = []
+  checkDomains refTblN refTbl (colN, refN) = catMaybes
+    [ checkSelfColExists
+    , checkRefColExists
+    , join $ liftM2 checkColDomain selfCol refCol
+    ]
+    where
+      selfCol = M.lookup colN selfTbl
+      refCol = M.lookup refN refTbl
+      checkSelfColExists =
+        if isNothing selfCol
+        then Just $ missingColErr tableName colN
+        else Nothing
+      checkRefColExists =
+        if isNothing refCol
+        then Just $ missingColErr refTblN refN
+        else Nothing
+      checkColDomain sc rc =
+        if ((/=) `on` columnType) sc rc
+        then Just $ err $ "у столбцов " <> tableName <> "." <> colN <> " и " <> refTblN <> "." <> refN <> " разные типы"
+        else Nothing
+  missingColErr tn cn = err $ "столбец " <> tn <> "." <> cn <> " не существует"
+  Just (selfTbl, _) = M.lookup tableName tm
