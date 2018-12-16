@@ -9,7 +9,7 @@ import Data.Hashable
 import GHC.Generics
 
 data NumberClass = Natural | Whole | Rational
-    deriving (Eq, Generic, Hashable)
+    deriving (Eq, Generic, Hashable, Ord)
 data Domain = DomainNumber NumberClass
             | DomainString
             | DomainText
@@ -18,7 +18,7 @@ data Domain = DomainNumber NumberClass
             | DomainTime
             | DomainEnum (S.HashSet Text)
             | DomainOther Text
-    deriving (Eq, Generic, Hashable)
+    deriving (Eq, Generic, Hashable, Ord)
 data Attribute = Attribute {
       attributeIsKey :: Bool
     , attributeName :: Vertex

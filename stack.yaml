@@ -21,7 +21,7 @@ extra-deps:
 - stm-hamt-1.2.0.2
 - primitive-0.6.4.0
 - primitive-extras-0.7.1
-# - servant-swagger-ui-0.3.2.3.19.3
+- multiset-0.3.4.1
 
 allow-newer: true
 

@@ -30,6 +30,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LTE
 import Text.Megaparsec
 import qualified Data.HashSet as S
+import qualified Data.MultiSet as MS
 import qualified Data.HashMap.Strict as M
 import Data.Maybe
 import qualified Data.List as L
@@ -120,19 +121,19 @@ validatePhysSchema iid desc =
                         <> concatMap checkDuplicateColumns schemaFromUser
                         <> concatMap (checkForeignKeys tablesMap) schemaFromUser
                         <> concatMap checkPrimaryKeys schemaFromUser
-                        <> map relationsMissingInSchema (S.toList $ S.difference rsType psType)
-                        <> map relationsExtraneousInSchema (S.toList $ S.difference psType rsType)
+                        <> map relationsMissingInSchema (MS.toList $ MS.difference rsType psType)
+                        <> map relationsExtraneousInSchema (MS.toList $ MS.difference psType rsType)
       , accepted = NotAccepted
       }
 
-relationsMissingInSchema :: S.HashSet (Bool, Domain) -> Text
+relationsMissingInSchema :: MS.MultiSet (Bool, Domain) -> Text
 relationsMissingInSchema rel = LT.toStrict $ "Отношение вида\n(" <> relDesc rel <> ")\nприсутствуте в реляционной схеме, но отсутствует в физической"
 
-relationsExtraneousInSchema :: S.HashSet (Bool, Domain) -> Text
+relationsExtraneousInSchema :: MS.MultiSet (Bool, Domain) -> Text
 relationsExtraneousInSchema rel = LT.toStrict $ "Отношение вида\n(" <> relDesc rel <> ")\nприсутствуте в физической схеме, но отсутствует в реляционной"
 
-relDesc :: S.HashSet (Bool, Domain) -> LT.Text
-relDesc rel = LT.intercalate ", " $ map (\(isPK, dom) -> (if isPK then "*" else "") <> domainToString dom) $ S.toList rel
+relDesc :: MS.MultiSet (Bool, Domain) -> LT.Text
+relDesc rel = LT.intercalate ", " $ map (\(isPK, dom) -> (if isPK then "*" else "") <> domainToString dom) $ MS.toList rel
 
 checkDuplicateTables :: [Table] -> [Text]
 checkDuplicateTables schema =
@@ -202,13 +203,13 @@ checkForeignKeys tm Table{..}
   missingColErr tn cn = err $ "столбец " <> tn <> "." <> cn <> " не существует"
   Just (selfTbl, _) = M.lookup tableName tm
 
-relationalSchemaType :: Relations -> S.HashSet (S.HashSet (Bool, Domain))
-relationalSchemaType (Relations rels) = S.map relationType rels
+relationalSchemaType :: Relations -> MS.MultiSet (MS.MultiSet (Bool, Domain))
+relationalSchemaType (Relations rels) = MS.fromList $ map relationType $ S.toList rels
   where
-  relationType (Relation attrs) = S.map (\Attribute{..} -> (attributeIsKey, attributeDomain)) attrs
+  relationType (Relation attrs) = MS.fromList $ map (\Attribute{..} -> (attributeIsKey, attributeDomain)) $ S.toList attrs
 
-relationalSchemaTypeFromPhysical :: [Table] -> S.HashSet (S.HashSet (Bool, Domain))
-relationalSchemaTypeFromPhysical = S.fromList . map tableToRelType
+relationalSchemaTypeFromPhysical :: [Table] -> MS.MultiSet (MS.MultiSet (Bool, Domain))
+relationalSchemaTypeFromPhysical = MS.fromList . map tableToRelType
   where
   tableToRelType Table{..} =
     let primaryKeyCols = fromMaybe [] $ unPrimaryKey <$> L.find isPK tableAttrs
@@ -216,7 +217,7 @@ relationalSchemaTypeFromPhysical = S.fromList . map tableToRelType
         unPrimaryKey _ = error "This should not happen"
         isPK (TablePrimaryKey _) = True
         isPK _ = False
-    in S.fromList $ map (colToRelT primaryKeyCols) tableCols
+    in MS.fromList $ map (colToRelT primaryKeyCols) tableCols
   colToRelT [] Column{..} = (PrimaryKey `elem` columnAttrs, dataTypeToDomain columnType)
   colToRelT pk Column{..} = (columnName `elem` pk, dataTypeToDomain columnType)
   dataTypeToDomain (TypeChar _) = DomainString

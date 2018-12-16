@@ -59,6 +59,7 @@ dependencies:
 - wai-app-static
 - unordered-containers
 - hashable
+- multiset
 
 library:
   source-dirs: src
