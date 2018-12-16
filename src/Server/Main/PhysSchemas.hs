@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Server.Main.PhysSchemas where
 
@@ -23,12 +24,7 @@ import Algo.SQLTools.Parse
 import Algo.SQLTools.Types
 import Algo.RSTools.Parse
 import Algo.RSTools.Types
-import Algo.RSTools.Util
 import Algo.RSTools.Pretty
-import Algo.FDTools.Types
-import Algo.FDTools.Parse
-import Algo.FDTools.Pretty
-import Algo.FDTools.Util
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LTE
@@ -36,11 +32,8 @@ import Text.Megaparsec
 import qualified Data.HashSet as S
 import qualified Data.HashMap.Strict as M
 import Data.Maybe
-import Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
 import qualified Data.List as L
 import Data.Function (on)
-import qualified Data.Foldable as FL
 
 sqlschemas :: ServerT (BasicCrud "sqlschemaId" PhysSchemaIdentifier) SessionEnv
 sqlschemas = postSqlschemas
@@ -107,14 +100,39 @@ validatePhysSchema iid desc =
     Right schemaFromUser -> do
       let tablesMap = M.fromList $ map (\t -> (tableName t, (colMap t, t))) schemaFromUser
           colMap Table{..} = M.fromList $ map (\c -> (columnName c, c)) tableCols
+      (rss :: [RelationalSchema]) <- bracketDB $
+        fromRelation =<<
+        execDB [tutdrel|RelationalSchema matching (PhysicalSchema where id = $iid){userId}|]
+      when (null rss) $ throwError err404
+      let RelationalSchema{relations} = head rss
+          rsSyntaxError err = throwError err400{
+            errBody = LTE.encodeUtf8 $ LT.pack $ (
+              "Ошибка синтаксиса в описании реляционной схемы:\n" <>
+              parseErrorPretty' relations err)
+            }
+      rs <- either rsSyntaxError pure $ parseRelations $ LT.fromStrict relations
+      let rsType = relationalSchemaType rs
+          psType = relationalSchemaTypeFromPhysical schemaFromUser
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
         id = iid
       , description = desc
       , validationErrors = checkDuplicateTables schemaFromUser
                         <> concatMap checkDuplicateColumns schemaFromUser
                         <> concatMap (checkForeignKeys tablesMap) schemaFromUser
+                        <> concatMap checkPrimaryKeys schemaFromUser
+                        <> map relationsMissingInSchema (S.toList $ S.difference rsType psType)
+                        <> map relationsExtraneousInSchema (S.toList $ S.difference psType rsType)
       , accepted = NotAccepted
       }
+
+relationsMissingInSchema :: S.HashSet (Bool, Domain) -> Text
+relationsMissingInSchema rel = LT.toStrict $ "Отношение вида\n(" <> relDesc rel <> ")\nприсутствуте в реляционной схеме, но отсутствует в физической"
+
+relationsExtraneousInSchema :: S.HashSet (Bool, Domain) -> Text
+relationsExtraneousInSchema rel = LT.toStrict $ "Отношение вида\n(" <> relDesc rel <> ")\nприсутствуте в физической схеме, но отсутствует в реляционной"
+
+relDesc :: S.HashSet (Bool, Domain) -> LT.Text
+relDesc rel = LT.intercalate ", " $ map (\(isPK, dom) -> (if isPK then "*" else "") <> domainToString dom) $ S.toList rel
 
 checkDuplicateTables :: [Table] -> [Text]
 checkDuplicateTables schema =
@@ -128,6 +146,23 @@ checkDuplicateColumns Table{..} =
   where
   showDupCol (a, _) = LT.toStrict $
     "В таблице " <> tableName <> " две колонки с именем " <> columnName a
+
+checkPrimaryKeys :: Table -> [Text]
+checkPrimaryKeys Table{..}
+  | [] <- filter isPKCol tableCols
+  , [] <- filter isPKAttr tableAttrs
+  = [LT.toStrict $ "В таблице " <> tableName <> " отсутствует первичный ключ"]
+  | _:_ <- filter isPKCol tableCols
+  , _:_ <- filter isPKAttr tableAttrs
+  = [LT.toStrict $ "В таблице " <> tableName <> " присутствуют объявления первичного ключа для отдельных столбцов и для кортежа"]
+  | _:_:_ <- filter isPKCol tableCols
+  = [LT.toStrict $ "В таблице " <> tableName <> " присутствуют множественные объявления первичного ключа для отдельных столбцов"]
+  | _:_:_ <- filter isPKAttr tableAttrs
+  = [LT.toStrict $ "В таблице " <> tableName <> " присутствуют множественные объявления первичного ключа для кортежа"]
+  | otherwise = []
+  where isPKCol Column{..} = PrimaryKey `elem` columnAttrs
+        isPKAttr TablePrimaryKey{} = True
+        isPKAttr _ = False
 
 checkForeignKeys :: M.HashMap LT.Text (M.HashMap LT.Text Column, b)
                     -> Table -> [Text]
@@ -166,3 +201,33 @@ checkForeignKeys tm Table{..}
         else Nothing
   missingColErr tn cn = err $ "столбец " <> tn <> "." <> cn <> " не существует"
   Just (selfTbl, _) = M.lookup tableName tm
+
+relationalSchemaType :: Relations -> S.HashSet (S.HashSet (Bool, Domain))
+relationalSchemaType (Relations rels) = S.map relationType rels
+  where
+  relationType (Relation attrs) = S.map (\Attribute{..} -> (attributeIsKey, attributeDomain)) attrs
+
+relationalSchemaTypeFromPhysical :: [Table] -> S.HashSet (S.HashSet (Bool, Domain))
+relationalSchemaTypeFromPhysical = S.fromList . map tableToRelType
+  where
+  tableToRelType Table{..} =
+    let primaryKeyCols = fromMaybe [] $ unPrimaryKey <$> L.find isPK tableAttrs
+        unPrimaryKey (TablePrimaryKey attrs) = attrs
+        unPrimaryKey _ = error "This should not happen"
+        isPK (TablePrimaryKey _) = True
+        isPK _ = False
+    in S.fromList $ map (colToRelT primaryKeyCols) tableCols
+  colToRelT [] Column{..} = (PrimaryKey `elem` columnAttrs, dataTypeToDomain columnType)
+  colToRelT pk Column{..} = (columnName `elem` pk, dataTypeToDomain columnType)
+  dataTypeToDomain (TypeChar _) = DomainString
+  dataTypeToDomain (TypeVarChar _) = DomainString
+  dataTypeToDomain (TypeText _) = DomainText
+  dataTypeToDomain (TypeInt _ attrs)
+    | Unsigned `elem` attrs = DomainNumber Natural
+    | otherwise = DomainNumber Whole
+  dataTypeToDomain (TypeRational _ _ _) = DomainNumber Rational
+  dataTypeToDomain (TypeFloat _ _) = DomainNumber Rational
+  dataTypeToDomain (TypeDate) = DomainDate
+  dataTypeToDomain (TypeTime) = DomainTime
+  dataTypeToDomain (TypeDateTime) = DomainDateTime
+  dataTypeToDomain (TypeEnum vars) = DomainEnum $ S.fromList vars
