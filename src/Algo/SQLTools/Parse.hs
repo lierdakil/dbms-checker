@@ -12,7 +12,7 @@ import Control.Monad
 import qualified Data.Text.Lazy as T
 
 tables :: Parser [Table]
-tables = table `endBy1` (space *> char ';' <* space)
+tables = table `endBy1` (space *> char ';' <* space) <* space <* eof
 
 table :: Parser Table
 table = do
@@ -31,7 +31,7 @@ table = do
   colsAndAttrs id' = do
     cols <- try column `endBy1` (space *> char ',' <* space)
     space
-    attrs <- tableAttr id' `sepBy1` (space *> char ',' <* space)
+    attrs <- tableAttr `sepBy1` (space *> char ',' <* space)
     space
     void $ char ')'
     return $ Table id' cols attrs
@@ -116,8 +116,8 @@ colAttr :: Parser ColumnAttr
 colAttr = string' "not null" *> pure NotNull
       <|> string' "primary key" *> pure PrimaryKey
 
-tableAttr :: T.Text -> Parser TableAttr
-tableAttr tblName = tablePrimaryKey <|> tableForeignKey
+tableAttr :: Parser TableAttr
+tableAttr = tablePrimaryKey <|> tableForeignKey
   where
   tablePrimaryKey = TablePrimaryKey <$> (
     string' "primary key" *> space *> char '(' *> space *> (
