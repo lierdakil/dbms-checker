@@ -11,7 +11,6 @@ import Data.Either
 import qualified Data.HashMap.Strict as M
 import Data.Void
 import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as T
 import Control.Monad
 import Data.Maybe
 

@@ -86,10 +86,10 @@ putComment :: CommentIdentifier -> CommentBodyInfo -> SessionEnv CommentInfo
 putComment cid CommentBodyInfo{..} = bracketDB $ do
   userInfo@UserInfo{..} <- asks (userSessionUserInfo . sessionData)
   when (userInfoUserRole /= Teacher) $ checkItemOwnership parentItem
-  (comments :: [Comment]) <- fromRelation =<< execDB
+  (comments' :: [Comment]) <- fromRelation =<< execDB
     [tutdrel|Comment where commentAuthor = $userInfoUserId and id = $cid|]
-  when (null comments) $ throwError err404
-  let Comment{commentTime} = head comments
+  when (null comments') $ throwError err404
+  let Comment{commentTime} = head comments'
   execDB [tutdctx|update Comment where commentAuthor = $userInfoUserId and id = $cid (
         parentItem := $parentItem
       , commentTime := $commentTime

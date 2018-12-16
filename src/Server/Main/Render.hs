@@ -9,10 +9,8 @@
 
 module Server.Main.Render where
 
-import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LTE
-import API
 import Config
 import Servant
 import API.Types

@@ -8,8 +8,6 @@ module Algo.FDTools.GraphViz
 
 import Algo.FDTools.Types
 import Algo.FDTools.Pretty
-import Algo.FDTools.Util
-import Data.Maybe
 import Data.GraphViz
 import Data.GraphViz.Types.Monadic
 import qualified Data.HashSet as S

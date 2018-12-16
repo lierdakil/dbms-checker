@@ -21,7 +21,6 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Servant
 import Data.Time
-import ProjectM36.Client (Connection, SessionId)
 
 import API.Types
 

@@ -15,9 +15,6 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString as B
 
-whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
-whenJust = flip $ maybe (return ())
-
 drawER :: ER -> IO B.ByteString
 drawER ER{..} = do
   let

@@ -3,7 +3,6 @@
 module Algo.SQLTools.Types where
 
 import Data.Text.Lazy (Text)
-import Algo.FDTools.Types
 import Data.Hashable
 import GHC.Generics
 

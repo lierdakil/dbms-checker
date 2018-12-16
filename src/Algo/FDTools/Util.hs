@@ -10,7 +10,6 @@ import Control.Monad
 import Data.Hashable
 import Data.Function
 import Data.List
-import Control.Arrow
 
 minimize :: Graph -> Graph
 minimize = minimize' M.empty . nontrivial

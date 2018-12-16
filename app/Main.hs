@@ -11,7 +11,6 @@ import Data.Maybe
 import Data.Time
 import System.Environment
 
-import ProjectM36.Client
 import System.IO.Error
 
 main :: IO ()

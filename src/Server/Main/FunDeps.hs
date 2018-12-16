@@ -89,7 +89,7 @@ validateFunDeps fdid desc = do
         fromRelation =<<
         execDB [tutdrel|ERDiagram matching (FunctionalDependencies where id = $fdid){userId}|]
       when (null erds) $ throwError err404
-      let ERDiagram{..} = head erds
+      let ERDiagram{derivedFDs, validationErrors} = head erds
       when (isNothing derivedFDs) $ throwError $
         if null validationErrors
         then err500{

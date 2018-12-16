@@ -8,10 +8,8 @@ module Server.Main where
 
 import Config
 import API
-import API.Types
 import Servant
 
-import qualified Servant.Auth.Server as Auth
 import Server.Main.PredefinedTopics
 import Server.Main.CustomTopics
 import Server.Main.Users

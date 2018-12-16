@@ -37,7 +37,6 @@ import qualified Data.HashMap.Strict as M
 import Data.Maybe
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
-import qualified Data.List as L
 import Data.Function (on)
 import qualified Data.Foldable as FL
 

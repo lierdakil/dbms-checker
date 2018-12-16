@@ -92,8 +92,8 @@ class HasResponseBody a where
   toResponseBody :: a -> ResponseBody a
 
 instance HasResponseBody ERDiagram where
-  toResponseBody ERDiagram{..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
-      id = id
+  toResponseBody ERDiagram{id=id', ..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
+      id = id'
     , description = diagram
     , accepted = accepted
     , validationErrors = validationErrors
@@ -103,20 +103,20 @@ instance {-#OVERLAPPABLE#-} HasResponseBody a => HasResponseBody [a] where
   type ResponseBody [a] = [ResponseBody a]
   toResponseBody = map toResponseBody
 instance HasResponseBody FunctionalDependencies where
-  toResponseBody FunctionalDependencies{..} = BasicCrudResponseBodyWithValidation {
-      id = id
+  toResponseBody FunctionalDependencies{id=id', ..} = BasicCrudResponseBodyWithValidation {
+      id = id'
     , description = funDeps
     , validationErrors = validationErrors
     }
 instance HasResponseBody RelationalSchema where
-  toResponseBody RelationalSchema{..} = BasicCrudResponseBodyWithValidation {
-      id = id
+  toResponseBody RelationalSchema{id=id', ..} = BasicCrudResponseBodyWithValidation {
+      id = id'
     , description = relations
     , validationErrors = validationErrors
     }
 instance HasResponseBody PhysicalSchema where
-  toResponseBody PhysicalSchema{..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
-      id = id
+  toResponseBody PhysicalSchema{id=id', ..} = BasicCrudResponseBodyWithAcceptanceAndValidation {
+      id = id'
     , description = schemaSQL
     , accepted = accepted
     , validationErrors = validationErrors
@@ -143,8 +143,8 @@ data CommentInfo = CommentInfo {
 
 instance HasResponseBody User where
   type instance ResponseBody User = UserInfo
-  toResponseBody User{..} = UserInfo {
-      userInfoUserId = id
+  toResponseBody User{id=id', ..} = UserInfo {
+      userInfoUserId = id'
     , userInfoUserRole = role
     , userInfoEmail = email
     , userInfoUsername = username
@@ -166,8 +166,8 @@ instance HasResponseBody [CommentWithUserInfo] where
 
 instance HasResponseBody CommentWithUserInfo where
   type instance ResponseBody CommentWithUserInfo = CommentInfo
-  toResponseBody CommentWithUserInfo{..} = CommentInfo {
-          id = id
+  toResponseBody CommentWithUserInfo{id=id', ..} = CommentInfo {
+          id = id'
         , commentTime = commentTime
         , parentItem = parentItem
         , commentAuthor = UserInfo {
