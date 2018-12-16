@@ -1,12 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, TypeFamilies #-}
 module Algo.SQLTools.Parse
   ( parseTables
   ) where
 
 import Algo.SQLTools.Types
-import Algo.Common.Parse
+import Algo.Common.Parse hiding (space)
 import Text.Megaparsec
-import Text.Megaparsec.Char hiding (space, spaceChar)
+import Text.Megaparsec.Char hiding (spaceChar)
 import Data.Void
 import Control.Monad
 import qualified Data.Text.Lazy as T
