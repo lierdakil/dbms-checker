@@ -23,4 +23,7 @@ spaceChar :: Parser Char
 spaceChar = char ' '
 
 ident :: Parser Text
-ident = T.strip . T.pack <$> (space *> some (letterChar <|> digitChar <|> oneOf' " _№"))
+ident = T.strip . T.pack <$> (space *> some (alphaNumChar <|> oneOf' " _№"))
+
+identNoSpace :: Parser Text
+identNoSpace = T.strip . T.pack <$> (space *> some (alphaNumChar <|> oneOf' "_№"))

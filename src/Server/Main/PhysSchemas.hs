@@ -18,7 +18,27 @@ import DB.Instances ()
 import DB.Accessor
 import DB.Utils
 import TutorialD.QQ
-
+import Algo.SQLTools.Parse
+import Algo.RSTools.Parse
+import Algo.RSTools.Types
+import Algo.RSTools.Util
+import Algo.RSTools.Pretty
+import Algo.FDTools.Types
+import Algo.FDTools.Parse
+import Algo.FDTools.Pretty
+import Algo.FDTools.Util
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LTE
+import Text.Megaparsec
+import qualified Data.HashSet as S
+import qualified Data.HashMap.Strict as M
+import Data.Maybe
+import Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
+import qualified Data.List as L
+import Data.Function (on)
+import qualified Data.Foldable as FL
 
 sqlschemas :: ServerT (BasicCrud "sqlschemaId" PhysSchemaIdentifier) SessionEnv
 sqlschemas = postSqlschemas
@@ -69,9 +89,23 @@ patchSqlschemas iid st = bracketDB $ do
 
 -- TODO
 validatePhysSchema :: PhysSchemaIdentifier -> Text -> SessionEnv PhysSchemaBody
-validatePhysSchema iid desc = return BasicCrudResponseBodyWithAcceptanceAndValidation {
-    id = iid
-  , description = desc
-  , validationErrors = []
-  , accepted = NotAccepted
-  }
+validatePhysSchema iid desc =
+  case parseTables $ LT.fromStrict desc of
+    Left err -> do
+      let errs = [T.pack $ "Ошибка синтаксиса в описании физической схемы:\n"
+               <> parseErrorPretty' desc err]
+      bracketDB $ do
+        execDB [tutdctx|update PhysicalSchema where id = $iid (validationErrors := $errs)|]
+      return BasicCrudResponseBodyWithAcceptanceAndValidation {
+        id = iid
+      , description = desc
+      , validationErrors = errs
+      , accepted = NotAccepted
+      }
+    Right schemaFromUser -> do
+      return BasicCrudResponseBodyWithAcceptanceAndValidation {
+        id = iid
+      , description = desc
+      , validationErrors = []
+      , accepted = NotAccepted
+      }
