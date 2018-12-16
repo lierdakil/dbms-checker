@@ -3,6 +3,7 @@ import * as api from '../../api'
 import { Glyphicon, Button, Image } from 'react-bootstrap'
 import { Spinner } from '../spinner'
 import { CommentBox } from '../comments'
+import { Help } from './components/help'
 
 interface State {
   fundeps: Partial<BasicCrudResponseBodyWithValidation<string>> | null
@@ -38,6 +39,31 @@ export class FunDeps extends React.Component<{}, State> {
     const { fundeps, img } = this.state
     return (
       <>
+        <Help>
+          <p>
+            Каждая ФЗ на новой строке. ФЗ состоит из левой и правой частей,
+            разделенных строкой "->", "→" или "\to". Левая и правая части --
+            списки атрибутов, разделенных запятыми. Атрибуты состоят из названия
+            сущности и названия атрибута, разделённых символом <code>.</code>.
+            Название сущности и название атрибута -- последовательности букв,
+            цифр, пробелов и символов <code>_</code>, <code>№</code>. Список
+            атрибутов опционально может быть заключен в скобки.
+          </p>
+
+          <p>
+            Поддерживаются комментарии. Комментарий начинается с символа{' '}
+            <code>#</code> и продолжается до конца строки.
+          </p>
+
+          <p>Пример:</p>
+
+          <pre>
+            {`(A, B) -> C
+C -> D # Комментарий
+D -> A
+# Комментарий`}
+          </pre>
+        </Help>
         <form onSubmit={this.handleSubmit}>
           <div>
             <label>
