@@ -27,7 +27,8 @@ data Column = Column {
     , columnType :: DataType
     , columnAttrs :: [ColumnAttr]
     } deriving (Eq, Generic, Hashable)
-data FKAction = NoAction | ActionSetNull | ActionRestrict | ActionCascade
+data FKAction = NoAction | ActionSetNull
+              | ActionSetDefault | ActionRestrict | ActionCascade
     deriving (Eq, Generic, Hashable)
 data TableAttr = TablePrimaryKey [Text] | TableForeignKey {
     fkCols :: [Text]

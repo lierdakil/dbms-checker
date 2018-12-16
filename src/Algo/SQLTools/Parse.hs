@@ -137,6 +137,7 @@ tableAttr = tablePrimaryKey <|> tableForeignKey
     uncurry (ctr refid refcol) <$> updateDelete
   fkAction = string' "no action" *> pure NoAction
          <|> string' "set null" *> pure ActionSetNull
+         <|> string' "set default" *> pure ActionSetDefault
          <|> string' "restrict" *> pure ActionRestrict
          <|> string' "cascade" *> pure ActionCascade
   updateDelete = try firstUpdateThenDelete <|> firstDeleteThenUpdate
