@@ -3,6 +3,7 @@ import * as api from '../../api'
 import { Glyphicon, Button } from 'react-bootstrap'
 import { Spinner } from '../spinner'
 import { CommentBox } from '../comments'
+import { Help } from './components/help'
 
 interface State {
   relschema: Partial<BasicCrudResponseBodyWithValidation<string>> | null
@@ -27,6 +28,71 @@ export class RelSchema extends React.Component<{}, State> {
     const { relschema } = this.state
     return (
       <>
+        <Help>
+          <p>
+            Отношения представляют из себя списки атрибутов и доменов,
+            разделенных запятыми и заключёнными в скобки. Атрибуты состоят из
+            названия сущности и названия атрибута, разделённых символом{' '}
+            <code>.</code>. Название сущности и название атрибута --
+            последовательности букв, цифр, пробелов и символов <code>_</code>,{' '}
+            <code>№</code>.
+          </p>
+          <p>
+            Название атрибута отделяется от домена атрибута символом{' '}
+            <code>:</code>. Допускаются следующие домены:
+            <ul>
+              <li>
+                <code>строка</code>
+              </li>
+              <li>
+                <code>текст</code>
+              </li>
+              <li>
+                <code>дата</code>
+              </li>
+              <li>
+                <code>время</code>
+              </li>
+              <li>
+                <code>дата/время</code>
+              </li>
+              <li>
+                <code>целое</code>
+              </li>
+              <li>
+                <code>натуральное</code>
+              </li>
+              <li>
+                <code>дробное</code>
+              </li>
+              <li>
+                <code>перечисление</code>
+              </li>
+            </ul>
+          </p>
+
+          <p>
+            В случае домена "перечисление", в скобках после него указывается
+            список допустимых значений, разделённых символом <code>,</code>.
+            Значениями являются произвольные строки символов кроме{' '}
+            <code>,</code>, <code>(</code>, <code>)</code>
+          </p>
+
+          <p>
+            Пробелы и переносы строк игнорируются за исключением пробелов в
+            середине названий атрибутов (там они интерпретиуются как часть
+            названия атрибута)
+          </p>
+
+          <p>
+            Пример:
+            <pre>
+              {`(*e1.id : натуральное, e1.attr : текст, e2.id:натуральное)
+(*e2.id : натуральное, e2.attr : текст)
+(*e3.id : натуральное, e3.attr : перечисление (арбуз, банан, персик))`}
+            </pre>
+          </p>
+        </Help>
         <form onSubmit={this.handleSubmit}>
           <div>
             <label>
