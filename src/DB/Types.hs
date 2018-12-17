@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, DeriveAnyClass #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 module DB.Types where
 
 import Data.Text (Text)

@@ -23,6 +23,6 @@ instance TypeScript UTCTime where
 $(mconcat <$> traverse (deriveTypeScript jsonDerivationOptions) allJsonTypes)
 
 main :: IO ()
-main = do
+main =
   putStrLn $ formatTSDeclarations $
     concat $(foldr (\x acc -> [|getTypeScriptDeclarations $(makeProxy x) : $acc|]) [|[]|] allJsonTypes)

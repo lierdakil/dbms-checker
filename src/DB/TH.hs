@@ -18,7 +18,7 @@ deriveAtomable :: Name -> Q [Dec]
 deriveAtomable t =
   let typ = return $ ConT t
       (<<>>) = liftM2 (<>)
-  in do
+  in
     [d|deriving instance Show $typ|]
     <<>> [d|deriving instance Eq $typ|]
     <<>> [d|instance NFData $typ|]

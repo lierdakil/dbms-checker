@@ -41,7 +41,7 @@ erToFDs ER{..} = nontrivial . M.fromListWith (<>) $
       | otherwise
       = ctKeys Many --> rsOrNull : oneToOne
       where
-        oneToOne = concatMap (\x -> map (--> rs) $ keysFromEnt x) (ctf One)
+        oneToOne = concatMap (map (--> rs) . keysFromEnt) (ctf One)
         rs = S.unions [ctKeys One, attrs2vtx' relName relAttrs]
         rsOrNull | S.null rs = S.singleton (Vertex relName "Θ")
                  | otherwise = rs

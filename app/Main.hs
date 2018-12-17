@@ -7,7 +7,6 @@ import Config
 import Network.Wai.Handler.Warp (run)
 import Servant.Auth.Server
 import Servant.Auth.Server.SetCookieOrphan ()
-import Data.Maybe
 import Data.Time
 import System.Environment
 
@@ -17,14 +16,14 @@ main :: IO ()
 main = do
   env <- getEnvironment
   let cfg = Config {
-    configPort       = fromMaybe 8081 (read <$> lookup "DBMS_CHECKER_PORT" env)
+    configPort       = maybe 8081 read $ lookup "DBMS_CHECKER_PORT" env
   , configOrigins    = words <$> lookup "DBMS_CHECKER_ORIGINS" env
-  , configSessionDur = nominalDay * fromIntegral (fromMaybe (7 :: Word) (read <$> lookup "DBMS_SESSION_EXPIRATION_DAYS" env))
+  , configSessionDur = nominalDay * fromIntegral (maybe (7 :: Word) read (lookup "DBMS_SESSION_EXPIRATION_DAYS" env))
   }
   let keyPath = "data/jwtKey.json"
       handleErr err = do
-        putStrLn $ show err
-        putStrLn $ "Trying to create JWT key file..."
+        print err
+        print ("Trying to create JWT key file..." :: String)
         writeKey keyPath
         readKey keyPath
   keyFromFile <- tryIOError $ readKey keyPath

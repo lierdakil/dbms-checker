@@ -20,7 +20,7 @@ relationFDs (Relation attr)
   where (lhsa, rhsa) = partition attributeIsKey $ S.toList attr
 
 relProject :: Relation -> Graph -> Graph
-relProject (Relation attrs) allFDs = project (S.map attributeName attrs) allFDs
+relProject (Relation attrs) = project (S.map attributeName attrs)
 
 allRelationFDs :: Graph -> Relations -> S.HashSet (Relation, Graph)
 allRelationFDs allFDs (Relations rels) = S.map (\rel -> (rel, relProject rel allFDs)) rels

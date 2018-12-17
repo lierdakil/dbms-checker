@@ -9,12 +9,13 @@ import Algo.Common.Parse
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (space, spaceChar)
 import Data.Void
-import Control.Monad
+import Data.Functor
+import Data.Maybe
 import qualified Data.Text.Lazy as T
 import qualified Data.HashSet as S
 
 comment :: Parser ()
-comment = try (char '#' *> anyChar `manyTill` optionalEol *> pure ())
+comment = try (char '#' *> anyChar `manyTill` optionalEol $> ())
 
 relations :: Parser Relations
 relations = Relations . S.fromList <$> (
@@ -29,26 +30,26 @@ relation = Relation . S.fromList <$>
 
 attribute :: Parser Attribute
 attribute = do
-  isKey <- maybe False (const True) <$> (optional $ char '*' <* space)
+  isKey <- isJust <$> optional (char '*' <* space)
   Attribute isKey <$> (vertex Nothing <* space)
                       <*> (char ':' *> space *> domain)
 
 domain :: Parser Domain
-domain = string' "строка" *> pure DomainString
-     <|> string' "текст" *> pure DomainText
-     <|> string' "дата" *> pure DomainDateTime
-     <|> string' "время" *> pure DomainDate
-     <|> string' "дата/время" *> pure DomainTime
-     <|> string' "целое" *> pure (DomainNumber Whole)
-     <|> string' "натуральное" *> pure (DomainNumber Natural)
-     <|> string' "дробное" *> pure (DomainNumber Rational)
+domain = string' "строка" $> DomainString
+     <|> string' "текст" $> DomainText
+     <|> string' "дата" $> DomainDateTime
+     <|> string' "время" $> DomainDate
+     <|> string' "дата/время" $> DomainTime
+     <|> string' "целое" $> DomainNumber Whole
+     <|> string' "натуральное" $> DomainNumber Natural
+     <|> string' "дробное" $> DomainNumber Rational
      <|> string' "перечисление" *> space *> char '(' *>
           (DomainEnum . S.fromList <$>
             (space *> enumItem <* space) `sepBy` char ',') <* char ')'
      <|> (DomainOther <$> enumItem)
 
 enumItem :: Parser T.Text
-enumItem = T.pack <$> (many (noneOf (",()" :: [Char])))
+enumItem = T.pack <$> many (noneOf (",()" :: String))
 
 parseRelations :: T.Text -> Either (ParseError Char Void) Relations
 parseRelations = parse relations "input"

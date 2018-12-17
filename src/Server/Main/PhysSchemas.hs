@@ -63,7 +63,7 @@ postSqlschemas desc = do
         , accepted = NotAccepted
         , validationErrors = []
         }
-  bracketDB $ do
+  bracketDB $
     execDB [tutdctx|insert PhysicalSchema $fds|]
   validatePhysSchema nid desc
 
@@ -90,7 +90,7 @@ validatePhysSchema iid desc =
     Left err -> do
       let errs = [T.pack $ "Ошибка синтаксиса в описании физической схемы:\n"
                <> parseErrorPretty' desc err]
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update PhysicalSchema where id = $iid (validationErrors := $errs)|]
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
         id = iid
@@ -107,7 +107,7 @@ validatePhysSchema iid desc =
       when (null rss) $ throwError err404
       let RelationalSchema{relations} = head rss
           rsSyntaxError err = throwError err400{
-            errBody = LTE.encodeUtf8 $ LT.pack $ (
+            errBody = LTE.encodeUtf8 $ LT.pack (
               "Ошибка синтаксиса в описании реляционной схемы:\n" <>
               parseErrorPretty' relations err)
             }
@@ -212,7 +212,7 @@ relationalSchemaTypeFromPhysical :: [Table] -> MS.MultiSet (MS.MultiSet (Bool, D
 relationalSchemaTypeFromPhysical = MS.fromList . map tableToRelType
   where
   tableToRelType Table{..} =
-    let primaryKeyCols = fromMaybe [] $ unPrimaryKey <$> L.find isPK tableAttrs
+    let primaryKeyCols = maybe [] unPrimaryKey $ L.find isPK tableAttrs
         unPrimaryKey (TablePrimaryKey attrs) = attrs
         unPrimaryKey _ = error "This should not happen"
         isPK (TablePrimaryKey _) = True
@@ -226,9 +226,9 @@ relationalSchemaTypeFromPhysical = MS.fromList . map tableToRelType
   dataTypeToDomain (TypeInt _ attrs)
     | Unsigned `elem` attrs = DomainNumber Natural
     | otherwise = DomainNumber Whole
-  dataTypeToDomain (TypeRational _ _ _) = DomainNumber Rational
-  dataTypeToDomain (TypeFloat _ _) = DomainNumber Rational
-  dataTypeToDomain (TypeDate) = DomainDate
-  dataTypeToDomain (TypeTime) = DomainTime
-  dataTypeToDomain (TypeDateTime) = DomainDateTime
+  dataTypeToDomain TypeRational{} = DomainNumber Rational
+  dataTypeToDomain TypeFloat{} = DomainNumber Rational
+  dataTypeToDomain TypeDate = DomainDate
+  dataTypeToDomain TypeTime = DomainTime
+  dataTypeToDomain TypeDateTime = DomainDateTime
   dataTypeToDomain (TypeEnum vars) = DomainEnum $ S.fromList vars

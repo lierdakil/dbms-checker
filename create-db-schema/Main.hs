@@ -32,7 +32,7 @@ main = do
   sessionId <- eCheck $ createSessionAtHead conn "master"
 
   -- this creates the domains and relations, but not the constraints
-  _ <- mapM (eCheck . executeDatabaseContextExpr sessionId conn) $
+  mapM_ (eCheck . executeDatabaseContextExpr sessionId conn) $
       $(foldr (\x acc -> [|toAddTypeExpr $(makeProxy x) : $acc|]) [|[]|] domains) ++
       $(foldr (\x acc -> [|toDefineExpr $(makeProxy x) (T.pack $ nameBase x) : $acc|]) [|[]|] DB.TypeLists.relations) ++
       []
@@ -49,7 +49,7 @@ main = do
       , registrationDate = time
       , role = Teacher
     }
-  eCheck $ executeDatabaseContextExpr sessionId conn $ [tutdctx|insert User $user|]
+  eCheck $ executeDatabaseContextExpr sessionId conn [tutdctx|insert User $user|]
 
   let topics = [
           "Автопрокат"
@@ -97,7 +97,7 @@ main = do
         , "Школа английского языка"
         ]
   trels <- mapM (\t -> nextUUID >>= \(Just u) -> return $ PredefinedTopic (PredefinedTopicIdentifier u) t) topics
-  eCheck $ executeDatabaseContextExpr sessionId conn $ [tutdctx|insert PredefinedTopic $trels|]
+  eCheck $ executeDatabaseContextExpr sessionId conn [tutdctx|insert PredefinedTopic $trels|]
   eCheck $ commit sessionId conn
 
   return ()

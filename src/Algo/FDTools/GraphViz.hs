@@ -33,7 +33,6 @@ printEdge :: Edge -> DotM T.Text ()
 printEdge (l, r) | [ln] <- S.toList l = do
   names <- mapM printVertex (S.toList r)
   mapM_ (\n -> vertexToString ln --> n) names
-  return ()
 printEdge (l, r) = do
   namesl <- mapM printVertex (S.toList l)
   namesr <- mapM printVertex (S.toList r)
@@ -41,7 +40,6 @@ printEdge (l, r) = do
   node name [shape PointShape]
   mapM_ (\n -> edge n name [ArrowHead noArrow]) namesl
   mapM_ (\n -> name --> n) namesr
-  return ()
 
 printVertex :: Vertex -> DotM T.Text T.Text
 printVertex (Vertex p n) = node label [] >> return label

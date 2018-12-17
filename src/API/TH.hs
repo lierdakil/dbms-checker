@@ -11,11 +11,11 @@ import Control.Monad
 import Data.Proxy
 
 deriveToSchema :: Name -> Q [Dec]
-deriveToSchema t = let typ = return $ ConT t in do
+deriveToSchema t = let typ = return $ ConT t in
   [d|instance ToSchema $typ|]
 
 deriveGeneric :: Name -> Q [Dec]
-deriveGeneric t = let typ = return $ ConT t in do
+deriveGeneric t = let typ = return $ ConT t in
   [d|deriving instance Generic $typ|]
 
 deriveToParamSchema :: Name -> Q [Dec]

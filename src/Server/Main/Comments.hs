@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main.Comments where
 
@@ -118,11 +117,11 @@ checkItemOwnership parent = do
   -- check if user owns the parent item in question
   uId <- asks (userSessionUserId . sessionData)
   let exists = (/= Finite 0) . cardinality
-      query rel iid = execDB $ [tutdrel|($rel where userId = $uId and id = $iid){}|]
+      query rel iid = execDB [tutdrel|($rel where userId = $uId and id = $iid){}|]
   isOwner <- case parent of
     ParentTopicSelection tuId -> return $ tuId == uId
     ParentERD iid -> exists <$> query [tutdrel|ERDiagram|] iid
     ParentFunDep iid -> exists <$> query [tutdrel|FunctionalDependencies|] iid
     ParentRelSchema iid -> exists <$> query [tutdrel|RelationalSchema|] iid
     ParentPhysSchema iid -> exists <$> query [tutdrel|PhysicalSchema|] iid
-  when (not isOwner) $ throwError err403
+  unless isOwner $ throwError err403

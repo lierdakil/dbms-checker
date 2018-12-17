@@ -8,7 +8,7 @@ import Algo.Common.Parse hiding (space)
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (spaceChar)
 import Data.Void
-import Control.Monad
+import Data.Functor
 import qualified Data.Text.Lazy as T
 
 tables :: Parser [Table]
@@ -73,33 +73,33 @@ datatype = typeChar
          <|> parseWithLen "mediumtext" TypeText 16777215
          <|> parseWithLen "longtext" TypeText 4294967295
   typeInt = do
-    len <- string' "tinyint" *> pure 1
-       <|> string' "smallint" *> pure 2
-       <|> string' "mediumint" *> pure 3
-       <|> string' "int" *> pure 4
-       <|> string' "bigint" *> pure 8
+    len <- string' "tinyint" $> 1
+       <|> string' "smallint" $> 2
+       <|> string' "mediumint" $> 3
+       <|> string' "int" $> 4
+       <|> string' "bigint" $> 8
     space
     width <- fmap (Width . read) <$> optional (char '(' *> some digitChar <* char ')')
     space
     attrs <- numberAttr `sepEndBy` space
-    return $ TypeInt len $ maybe id (:) width $ attrs
+    return $ TypeInt len $ maybe id (:) width attrs
   typeRational = do
-    void $ (string' "decimal" <|> string' "numeric")
+    void (string' "decimal" <|> string' "numeric")
     char '(' *> space *> (
       TypeRational <$> (read <$> some digitChar <* space)
                    <*> (char ',' *> space *> (read <$> some digitChar))
       ) <* space <* char ')'
       <*> numberAttr `sepEndBy` space
   typeFloat = do
-    len <- string' "float" *> pure 4
-       <|> string' "double" *> pure 8
+    len <- string' "float" $> 4
+       <|> string' "double" $> 8
     TypeFloat len <$> numberAttr `sepEndBy` space
-  numberAttr = string' "unsigned" *> pure Unsigned
-           <|> string' "zerofill" *> pure ZeroFill
-           <|> string' "auto_increment" *> pure AutoIncrement
-  typeDate = string' "date" *> space *> pure TypeDate
-  typeTime = string' "time" *> space *> pure TypeTime
-  typeDateTime = string' "datetime" *> space *> pure TypeDateTime
+  numberAttr = string' "unsigned" $> Unsigned
+           <|> string' "zerofill" $> ZeroFill
+           <|> string' "auto_increment" $> AutoIncrement
+  typeDate = string' "date" *> space $> TypeDate
+  typeTime = string' "time" *> space $> TypeTime
+  typeDateTime = string' "datetime" *> space $> TypeDateTime
   typeEnum = do
     void $ string' "enum"
     space
@@ -113,8 +113,8 @@ datatype = typeChar
   strLit = T.pack <$> (char '\'' *> manyTill printChar (char '\''))
 
 colAttr :: Parser ColumnAttr
-colAttr = string' "not null" *> pure NotNull
-      <|> string' "primary key" *> pure PrimaryKey
+colAttr = string' "not null" $> NotNull
+      <|> string' "primary key" $> PrimaryKey
 
 tableAttr :: Parser TableAttr
 tableAttr = tablePrimaryKey <|> tableForeignKey
@@ -135,11 +135,11 @@ tableAttr = tablePrimaryKey <|> tableForeignKey
               <* space <* char ')'
     space
     uncurry (ctr refid refcol) <$> updateDelete
-  fkAction = string' "no action" *> pure NoAction
-         <|> string' "set null" *> pure ActionSetNull
-         <|> string' "set default" *> pure ActionSetDefault
-         <|> string' "restrict" *> pure ActionRestrict
-         <|> string' "cascade" *> pure ActionCascade
+  fkAction = string' "no action" $> NoAction
+         <|> string' "set null" $> ActionSetNull
+         <|> string' "set default" $> ActionSetDefault
+         <|> string' "restrict" $> ActionRestrict
+         <|> string' "cascade" $> ActionCascade
   updateDelete = try firstUpdateThenDelete <|> firstDeleteThenUpdate
   firstDeleteThenUpdate = (,)
     <$> (string' "on delete" *> space *> fkAction <* space)

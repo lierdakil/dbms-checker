@@ -142,7 +142,7 @@ data CommentInfo = CommentInfo {
   }
 
 instance HasResponseBody User where
-  type instance ResponseBody User = UserInfo
+  type ResponseBody User = UserInfo
   toResponseBody User{id=id', ..} = UserInfo {
       userInfoUserId = id'
     , userInfoUserRole = role
@@ -152,12 +152,12 @@ instance HasResponseBody User where
     }
 
 instance HasResponseBody [CommentWithUserInfo] where
-  type instance ResponseBody [CommentWithUserInfo] = [ResponseBody CommentWithUserInfo]
+  type ResponseBody [CommentWithUserInfo] = [ResponseBody CommentWithUserInfo]
   toResponseBody comments = buildForest NoParentComment
     where
       parentMap :: M.HashMap ParentComment [CommentWithUserInfo]
       parentMap = foldl' foldf M.empty comments
-      foldf acc x@(CommentWithUserInfo{parentComment}) = M.insertWith (<>) parentComment [x] acc
+      foldf acc x@CommentWithUserInfo{parentComment} = M.insertWith (<>) parentComment [x] acc
       buildForest parent = sortBy sorting $ maybe [] (map toCommentInfo) $ M.lookup parent parentMap
       toCommentInfo x@CommentWithUserInfo{id=id'} =
         (toResponseBody x){childrenComments = buildForest $ ParentComment id'}
@@ -165,7 +165,7 @@ instance HasResponseBody [CommentWithUserInfo] where
         = compare t1 t2
 
 instance HasResponseBody CommentWithUserInfo where
-  type instance ResponseBody CommentWithUserInfo = CommentInfo
+  type ResponseBody CommentWithUserInfo = CommentInfo
   toResponseBody CommentWithUserInfo{id=id', ..} = CommentInfo {
           id = id'
         , commentTime = commentTime

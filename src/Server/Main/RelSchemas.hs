@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -66,7 +66,7 @@ postRelschemas desc = do
         , relations = desc
         , validationErrors = []
         }
-  bracketDB $ do
+  bracketDB $
     execDB [tutdctx|insert RelationalSchema $item|]
   validateRelSchema nid desc
 
@@ -86,7 +86,7 @@ validateRelSchema iid desc = do
     Left err -> do
       let errs = [T.pack $ "Ошибка синтаксиса в описании реляционной схемы:\n"
                <> parseErrorPretty' desc err]
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update RelationalSchema where id = $iid (validationErrors := $errs)|]
       return BasicCrudResponseBodyWithValidation {
         id = iid
@@ -101,7 +101,7 @@ validateRelSchema iid desc = do
       when (null fds) $ throwError err404
       let FunctionalDependencies{funDeps} = head fds
           fdSyntaxError err = throwError err400{
-            errBody = LTE.encodeUtf8 $ LT.pack $ (
+            errBody = LTE.encodeUtf8 $ LT.pack (
               "Ошибка синтаксиса в описании функциональных зависимостей:\n" <>
               parseErrorPretty' funDeps err)
             }
@@ -113,7 +113,7 @@ validateRelSchema iid desc = do
                 <> errLosslessJoin parsedFDs schemaFromUser
                 <> errSamePK schemaFromUser
                 <> errConflictingDomain schemaFromUser
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update RelationalSchema where id = $iid (validationErrors := $errors)|]
       return BasicCrudResponseBodyWithValidation {
           id = iid
@@ -126,7 +126,7 @@ errMissingFDs :: Graph
 errMissingFDs allFDs relSchemaWithFDs = map showMissing (M.toList missing)
   where
   missing = getUnderiveable allFDs fdsPreservedInRS
-  fdsPreservedInRS = S.foldr (\x y -> M.unionWith (<>) (snd x) y) M.empty $ relSchemaWithFDs
+  fdsPreservedInRS = S.foldr (\x y -> M.unionWith (<>) (snd x) y) M.empty relSchemaWithFDs
   showMissing fd
     = LT.toStrict $ "В списке функциональных зависимостей присутствует\n"
     <> edgeToString fd <> ",\nно она теряется в реляционной схеме"

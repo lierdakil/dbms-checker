@@ -7,7 +7,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module DB.Accessor (module DB.Accessor, toAtom) where
 
@@ -41,13 +40,13 @@ instance MonadReader r m => MonadReader r (DBContextT m) where
   local f a = DBContextT . ReaderT $ \c -> local f $ runReaderT (runDBContextT a) c
 
 getDBConfig :: Monad m => DBContextT m (Connection, SessionId)
-getDBConfig = DBContextT $ ask
+getDBConfig = DBContextT ask
 
 setDirty :: Monad m => Bool -> DBContextT m ()
 setDirty b = DBContextT $ put b
 
 getIsDirty :: Monad m => DBContextT m Bool
-getIsDirty = DBContextT $ get
+getIsDirty = DBContextT get
 
 commitDB :: (MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m ()
 commitDB = do
@@ -83,11 +82,11 @@ class ExecDB a where
   execDB :: (MonadIO m, MonadError ServantErr m) => a -> DBContextT m (ExecDBResultType a)
 
 instance ExecDB DatabaseContextExpr where
-  type instance ExecDBResultType DatabaseContextExpr = ()
+  type ExecDBResultType DatabaseContextExpr = ()
   execDB = execDBContext
 
 instance ExecDB RelationalExpr where
-  type instance ExecDBResultType RelationalExpr = Relation
+  type ExecDBResultType RelationalExpr = Relation
   execDB = execDBRel
 
 execDBContext :: (MonadIO m, MonadError ServantErr m) => DatabaseContextExpr -> DBContextT m ()
@@ -103,7 +102,7 @@ execDBRel expr = do
 
 fromRelation :: (MonadIO m, MonadError ServantErr m, Tupleable a) =>
                 Relation -> DBContextT m [a]
-fromRelation (Relation _ tupset) = handle $ sequence $ map fromTuple $ asList tupset
+fromRelation (Relation _ tupset) = handle $ mapM fromTuple $ asList tupset
 
 handle :: (MonadError ServantErr m, Show a1) =>
           Either a1 a2 -> m a2

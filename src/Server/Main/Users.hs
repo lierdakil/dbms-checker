@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -52,7 +52,7 @@ getUsersTopicInternal userId = do
   (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
   when (role /= Teacher && uId /= userId) $ throwError err403
   (tas :: [TopicAssignment]) <- fromRelation =<< execDB [tutdrel|TopicAssignment where userId = $userId|]
-  if (null tas)
+  if null tas
   then return Nothing
   else Just <$> getAssignedTopicInfo (topic $ head tas)
   where
@@ -73,20 +73,19 @@ patchUsersTopic userId assignedTopic = bracketDB $ do
   let ta = TopicAssignment { userId = userId, topic = assignedTopic }
   execDB [tutdctx|TopicAssignment := (TopicAssignment where not userId = $userId) union $ta|]
   topic <- getUsersTopicInternal userId
-  res <- case topic of
+  case topic of
     Nothing -> throwError err404{errBody = "Did not find the freshly inserted assignment"}
     Just (AssignedTopicInfoCustom t@CustomTopic{topicAuthor}) -> do
       when (topicAuthor /= userId) $ throwError err400
       return $ AssignedTopicInfoCustom t
     Just t -> return t
-  return res
 
 getUsersErd :: UserIdentifier -> SessionEnv (Maybe ERDBody)
 getUsersErd userId = bracketDB $ do
   (uId, role) <- asks (liftM2 (,) userSessionUserId userSessionUserRole . sessionData)
   when (role /= Teacher && uId /= userId) $ throwError err403
   (rel :: [ERDiagram]) <- fromRelation =<< execDB [tutdrel|ERDiagram where userId = $userId|]
-  if (null rel)
+  if null rel
   then return Nothing
   else return $ Just $ toResponseBody $ head rel
 
@@ -96,7 +95,7 @@ getUsersFundep userId = bracketDB $ do
   when (role /= Teacher && uId /= userId) $ throwError err403
   (rel :: [FunctionalDependencies]) <-
     fromRelation =<< execDB [tutdrel|FunctionalDependencies where userId = $userId|]
-  if (null rel)
+  if null rel
   then return Nothing
   else return $ Just $ toResponseBody $ head rel
 
@@ -106,7 +105,7 @@ getUsersRelSchema userId = bracketDB $ do
   when (role /= Teacher && uId /= userId) $ throwError err403
   (rel :: [RelationalSchema]) <-
     fromRelation =<< execDB [tutdrel|RelationalSchema where userId = $userId|]
-  if (null rel)
+  if null rel
   then return Nothing
   else return $ Just $ toResponseBody $ head rel
 
@@ -116,6 +115,6 @@ getUsersSqlSchema userId = bracketDB $ do
   when (role /= Teacher && uId /= userId) $ throwError err403
   (rel :: [PhysicalSchema]) <-
     fromRelation =<< execDB [tutdrel|PhysicalSchema where userId = $userId|]
-  if (null rel)
+  if null rel
   then return Nothing
   else return $ Just $ toResponseBody $ head rel

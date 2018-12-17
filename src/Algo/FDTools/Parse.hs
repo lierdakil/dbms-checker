@@ -8,13 +8,13 @@ import Algo.Common.Parse
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (space, spaceChar)
 import Data.Void
-import Control.Monad
+import Data.Functor
 import qualified Data.Text.Lazy as T
 import qualified Data.HashSet as S
 import qualified Data.HashMap.Strict as M
 
 comment :: Parser ()
-comment = try (char '#' *> anyChar `manyTill` optionalEol *> pure ())
+comment = try (char '#' *> anyChar `manyTill` optionalEol $> ())
 
 graph :: Parser Graph
 graph = M.fromListWith (<>) <$> (
@@ -39,7 +39,7 @@ vertexList p = S.fromList <$>
 
 vertex :: Maybe T.Text -> Parser Vertex
 vertex (Just p) = Vertex p <$> ident
-vertex Nothing = Vertex <$> (ident <* char '.') <*> (oneOf ("θΘ∅0" :: [Char]) *> pure "Θ" <|> ident)
+vertex Nothing = Vertex <$> (ident <* char '.') <*> (oneOf ("θΘ∅0" :: String) $> "Θ" <|> ident)
 
 parseGraph :: T.Text -> Either (ParseError Char Void) Graph
 parseGraph = parse graph "input"

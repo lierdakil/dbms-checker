@@ -4,6 +4,7 @@ module Algo.Common.Parse where
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (space, spaceChar)
 import Data.Void
+import Data.Functor
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as T
 
@@ -11,9 +12,9 @@ type Parser = Parsec Void Text
 type ParseErr = ParseError Char Void
 
 optionalEol :: Parser ()
-optionalEol = try (some eol *> pure ()) <|> eof
+optionalEol = try (some eol $> ()) <|> eof
 
-oneOf' :: [Char] -> Parser Char
+oneOf' :: String -> Parser Char
 oneOf' = oneOf
 
 space :: Parser ()

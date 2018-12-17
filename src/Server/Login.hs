@@ -38,7 +38,7 @@ checkCreds jwtCfg AuthData{..} = bracketDB $ do
   let User{saltedPasswordHash} = head rel
   let bspw = BL8.toStrict $ LTE.encodeUtf8 $ LT.fromStrict authPassword
       bshs = saltedPasswordHash
-  when (not $ validatePassword bspw bshs) $ throwError err
+  unless (validatePassword bspw bshs) $ throwError err
   let usr = UserSessionData {
         userSessionUserInfo = toResponseBody $ head rel
       , userSessionKey = ""
@@ -49,5 +49,5 @@ checkCreds jwtCfg AuthData{..} = bracketDB $ do
   return usr {userSessionKey = key}
   where
     err = err401{
-      errBody = LTE.encodeUtf8 $ "Неверное имя пользователя и/или пароль"
+      errBody = LTE.encodeUtf8 "Неверное имя пользователя и/или пароль"
       }

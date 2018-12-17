@@ -1,9 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main.CustomTopics where
 
@@ -28,17 +27,17 @@ postCustomTopic :: Text -> SessionEnv AssignedTopicInfo
 postCustomTopic topicName = bracketDB $ do
   nid <- getNewId CustomTopicIdentifier
   uId <- asks (userSessionUserId . sessionData)
-  let topic = CustomTopic {
+  let customTopic = CustomTopic {
     id = nid
   , name = topicName
   , topicAuthor = uId
   , accepted = NotAccepted
   }
-  execDB [tutdctx|insert CustomTopic $topic|]
+  execDB [tutdctx|insert CustomTopic $customTopic|]
   let assignment = TopicAssignment { userId = uId, topic = CustomAssignedTopic nid }
   execDB [tutdctx|TopicAssignment := TopicAssignment where not userId = $uId
     union $assignment|]
-  return $ AssignedTopicInfoCustom topic
+  return $ AssignedTopicInfoCustom customTopic
 
 putCustomTopic :: CustomTopicIdentifier -> Text -> SessionEnv (Maybe AssignedTopicInfo)
 putCustomTopic tid topicName = bracketDB $ do

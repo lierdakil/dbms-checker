@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 module Algo.FDTools.Pretty where
 
 import Algo.FDTools.Types

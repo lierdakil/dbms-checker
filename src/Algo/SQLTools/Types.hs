@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric, StandaloneDeriving #-}
+{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Algo.SQLTools.Types where
 

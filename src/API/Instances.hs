@@ -89,7 +89,7 @@ instance FromHttpApiData ParentItemIdentifier where
   parseQueryParam s = construct
     where
       (h, t) = T.breakOn " " s
-      uuid = left (T.pack) $ readEither (T.unpack t) :: Either T.Text UUID
+      uuid = left T.pack $ readEither (T.unpack t) :: Either T.Text UUID
       construct
         | h == "ParentTopicSelection" = ParentTopicSelection . coerce <$> uuid
         | h == "ParentERD" = ParentERD . coerce <$> uuid

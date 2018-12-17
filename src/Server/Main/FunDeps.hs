@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -47,7 +47,7 @@ postFundeps desc = do
         , funDeps = desc
         , validationErrors = []
         }
-  bracketDB $ do
+  bracketDB $
     execDB [tutdctx|insert FunctionalDependencies $fds|]
   validateFunDeps nid desc
 
@@ -76,7 +76,7 @@ validateFunDeps fdid desc = do
     Left err -> do
       let errs = [T.pack $ "Ошибка синтаксиса в описании функциональных зависимостей:\n"
                <> parseErrorPretty' desc err]
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update FunctionalDependencies where id = $fdid (validationErrors := $errs)|]
       return BasicCrudResponseBodyWithValidation {
         id = fdid
@@ -93,7 +93,7 @@ validateFunDeps fdid desc = do
       when (isNothing derivedFDs) $ throwError $
         if null validationErrors
         then err500{
-          errBody = LTE.encodeUtf8 $ LT.fromStrict $
+          errBody = LTE.encodeUtf8 $ LT.fromStrict
             "Отсутствует сохранённое описание ФЗ из ERD. Сообщите об этой ошибке администратору"
           }
         else err400{
@@ -111,7 +111,7 @@ validateFunDeps fdid desc = do
           showExtraneous fd
             = LT.toStrict $ "В модели \"сущность-связь\" отсутствует функицональная зависимость\n"
             <> edgeToString fd <> ",\nно она присутствует в переданном списке"
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update FunctionalDependencies where id = $fdid (validationErrors := $errors)|]
       return BasicCrudResponseBodyWithValidation {
           id = fdid

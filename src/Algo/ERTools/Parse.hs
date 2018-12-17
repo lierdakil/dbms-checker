@@ -8,6 +8,7 @@ import Algo.Common.Parse
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (space, spaceChar)
 import Data.Either
+import Data.Functor
 import qualified Data.HashMap.Strict as M
 import Data.Void
 import Data.Text.Lazy (Text)
@@ -46,7 +47,7 @@ rel = do
   attrs <- many (attr $ AttrParentRel name)
   return $ Rel name conns attrs
   where
-    oneOrMany = (char '1' *> pure One) <|> (oneOf' "MМ*" *> pure Many)
+    oneOrMany = (char '1' $> One) <|> (oneOf' "MМ*" $> Many)
     oldconnstx =
       try $ some $ try $ do
         space
@@ -59,7 +60,7 @@ rel = do
     newconnstx =
       try $ some $ try $ do
         space
-        ct <- (string "->" *> pure One) <|> (string "--" *> pure Many)
+        ct <- (string "->" $> One) <|> (string "--" $> Many)
         space
         ent <- ident
         return (ct, ent)
@@ -73,7 +74,7 @@ rel = do
     colonSep = space *> char ':' <* space
 
 attr :: AttrParent -> Parser Attr
-attr par = Attr par <$> ident <*> option False (char '*' *> pure True) <* optionalEol
+attr par = Attr par <$> ident <*> option False (char '*' $> True) <* optionalEol
 
 parseER :: Text -> Either (ParseError Char Void) ER
 parseER = parse er "input"

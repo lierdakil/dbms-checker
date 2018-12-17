@@ -1,10 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Main.ERD where
 
@@ -58,14 +57,13 @@ postErd desc = do
         , accepted = NotAccepted
         , validationErrors = []
         }
-  bracketDB $ do
-    execDB [tutdctx|insert ERDiagram $erdiag|]
+  bracketDB $ execDB [tutdctx|insert ERDiagram $erdiag|]
   validateErd nid desc
 
 putErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
 putErd erdid desc = do
   uId <- asks (userSessionUserId . sessionData)
-  bracketDB $ do
+  bracketDB $
     execDB [tutdctx|update ERDiagram where id = $erdid and userId = $uId (
       diagram := $desc, accepted := NotAccepted )|]
   validateErd erdid desc
@@ -77,11 +75,11 @@ patchErd erdid st = bracketDB $ do
   execDB [tutdctx|update ERDiagram where id = $erdid ( accepted := $st )|]
 
 validateErd :: ERDIdentifier -> Text -> SessionEnv ERDBody
-validateErd iid desc = do
+validateErd iid desc =
   case parseER (LT.fromStrict desc) of
     Left err -> do
       let errs = [T.pack $ parseErrorPretty' desc err]
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update ERDiagram where id = $iid ( validationErrors := $errs, dfds := Nothing )|]
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
           id = iid,
@@ -92,7 +90,7 @@ validateErd iid desc = do
     Right erd' -> do
       let binfds = Just $ BL.toStrict $ B.encode $ erToFDs erd'
           valerrs = [] :: [Text]
-      bracketDB $ do
+      bracketDB $
         execDB [tutdctx|update ERDiagram where id = $iid ( derivedFDs := $binfds, validationErrors := $valerrs )|]
       return BasicCrudResponseBodyWithAcceptanceAndValidation {
           id = iid,

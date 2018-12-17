@@ -10,7 +10,7 @@ import Control.Monad.Except
 
 getNewId :: (MonadIO m, MonadError ServantErr m) => (UUID -> a) -> m a
 getNewId constr = do
-  uuid <- liftIO $ nextUUID
+  uuid <- liftIO nextUUID
   case uuid of
     Nothing -> throwError $ ServantErr {
         errHTTPCode = 429

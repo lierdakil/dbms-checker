@@ -46,13 +46,14 @@ isProperSubsetOf :: (Hashable a, Eq a) => S.HashSet a -> S.HashSet a -> Bool
 isProperSubsetOf sub sup = S.size sub < S.size sup && isSubsetOf sub sup
 
 expand :: Graph -> [(VertexList, Vertex)]
-expand = concatMap (\(l,r) -> map (\x -> (l, x)) $ S.toList r) . M.toList
+expand = concatMap (\(l,r) -> map ((,) l) $ S.toList r) . M.toList
 
 closure :: VertexList -> Graph -> VertexList
 closure x s =
-  let c = x `S.union` (
-        S.unions $ M.elems $ M.filterWithKey (\z _ -> z `isSubsetOf` x) s
-        )
+  let c = x `S.union`
+        S.unions (
+          M.elems $ M.filterWithKey (\z _ -> z `isSubsetOf` x) s
+          )
   in if c == x then c else closure c s
 
 fullext :: Graph -> Graph
@@ -114,15 +115,15 @@ nfbc :: Graph -> S.HashSet VertexList -> Graph
 nfbc g sks = M.filterWithKey (\f _ -> not $ f `S.member` sks) g
 
 nfek :: Graph -> S.HashSet VertexList -> Graph
-nfek nfbc' ek = M.filter fdSatisfiesNFEK $ nfbc'
+nfek nfbc' ek = M.filter fdSatisfiesNFEK nfbc'
   where
-    ekas = S.foldr (S.union) S.empty ek
+    ekas = S.foldr S.union S.empty ek
     fdSatisfiesNFEK rhs = not $ S.null $ rhs `S.difference` ekas
 
 nf3 :: Graph -> S.HashSet VertexList -> Graph
-nf3 nfbc' pk = M.filter fdSatisfies3NF $ nfbc'
+nf3 nfbc' pk = M.filter fdSatisfies3NF nfbc'
   where
-    kas = S.foldr (S.union) S.empty pk
+    kas = S.foldr S.union S.empty pk
     fdSatisfies3NF rhs = not $ S.null $ rhs `S.difference` kas
 
 -- normalize :: Graph -> Graph -> Either [[Vertex]] [[Vertex]]

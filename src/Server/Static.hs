@@ -1,7 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE RecordWildCards #-}
 -- | Access files on the filesystem.
 module Server.Static
     ( staticServer
