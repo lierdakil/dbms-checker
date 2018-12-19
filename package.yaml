@@ -80,6 +80,17 @@ executables:
     - dbms-checker
     - warp
 
+  create-user:
+    main:                Main.hs
+    source-dirs:         create-user
+    ghc-options:
+    - -threaded
+    - -dynamic
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dbms-checker
+
   client-api-generator:
     main:                Main.hs
     source-dirs:         client-api-generator
