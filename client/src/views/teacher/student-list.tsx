@@ -154,9 +154,11 @@ export class StudentList extends React.Component<Props, State> {
             <Breadcrumb.Item active>Список пользователей</Breadcrumb.Item>
           )}
         </Breadcrumb>
-        {students.map((stInfo) => (
-          <StudentInfo info={stInfo} />
-        ))}
+        {students.map((stInfo) =>
+          stInfo.userInfoUserRole === 'Student' ? (
+            <StudentInfo info={stInfo} />
+          ) : null,
+        )}
       </div>
     )
   }
