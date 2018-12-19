@@ -85,7 +85,7 @@ patchUsersTopic userId assignedTopic = bracketDB $ do
   case topic of
     Nothing -> throwError err404{errBody = "Did not find the freshly inserted assignment"}
     Just (AssignedTopicInfoCustom t@CustomTopic{topicAuthor}) -> do
-      when (topicAuthor /= userId) $ throwError err400
+      when (topicAuthor /= uId) $ throwError err400
       return $ AssignedTopicInfoCustom t
     Just t -> return t
 
