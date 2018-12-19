@@ -16,6 +16,8 @@ import { FunDeps } from './pages/fundeps'
 import { RelSchema } from './pages/relschema'
 import { SqlSchema } from './pages/sqlschema'
 import { ErrorComponent } from './error-component'
+import { StudentList } from './teacher/student-list'
+import { StudentDetail } from './teacher/student-detail'
 
 export interface State {
   leftPanel: boolean
@@ -45,7 +47,6 @@ const DefaultLayout: React.Factory<LayoutProps> = (props) => {
 }
 
 const MainLayout: React.Factory<LayoutProps> = (props) => {
-  api.getUserSessionOrLogin()
   const { component: Component, ...rest } = props!
   return (
     <DefaultLayout
@@ -96,23 +97,46 @@ const PageLayout: React.Factory<LayoutProps> = (props) => {
   )
 }
 
+const StudentInterface: React.Factory<{}> = () => {
+  return (
+    <>
+      <MainLayout path="/" exact component={TaskList} />
+      <PageLayout path="/topic" component={Topic} />
+      <PageLayout path="/erd" component={Erd} />
+      <PageLayout path="/fundeps" component={FunDeps} />
+      <PageLayout path="/relschema" component={RelSchema} />
+      <PageLayout path="/sqlschema" component={SqlSchema} />
+    </>
+  )
+}
+
+const TeacherInterface: React.Factory<{}> = () => {
+  return (
+    <>
+      <MainLayout path="/" exact component={StudentList} />
+      <MainLayout path="/group/:groupId" component={StudentList} />
+      <MainLayout path="/user/:userId" component={StudentDetail} />
+    </>
+  )
+}
+
 const toTop = () => {
   location.href = '/'
 }
 
 export const Main = () => {
+  const session = api.getUserSessionOrLogin()
   return (
     <Grid>
       <ErrorComponent>
         <Router>
           <Switch>
             <LoginLayout path="/login" component={Login} />
-            <MainLayout path="/" exact component={TaskList} />
-            <PageLayout path="/topic" component={Topic} />
-            <PageLayout path="/erd" component={Erd} />
-            <PageLayout path="/fundeps" component={FunDeps} />
-            <PageLayout path="/relschema" component={RelSchema} />
-            <PageLayout path="/sqlschema" component={SqlSchema} />
+            {session.userSessionUserInfo.userInfoUserRole === 'Teacher' ? (
+              <TeacherInterface />
+            ) : (
+              <StudentInterface />
+            )}
           </Switch>
         </Router>
       </ErrorComponent>

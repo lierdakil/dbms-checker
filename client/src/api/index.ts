@@ -184,6 +184,15 @@ export async function patchComment(
   return request(`/comments/${id}`, 'PATCH', state)
 }
 
+export async function getUsers(group?: string): Promise<UserInfo[]> {
+  if (group === undefined) return request(`/users`, 'GET')
+  else return request(`/users?group=${encodeURIComponent(group)}`, 'GET')
+}
+
+export async function getUser(userId: string): Promise<UserInfo> {
+  return request(`/users/${userId}`, 'GET')
+}
+
 async function request(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH',
@@ -221,7 +230,7 @@ async function request(
   } else if (type == 'blob') return response.blob()
 }
 
-interface UserItems {
+export interface UserItems {
   topic: AssignedTopicInfo
   erd: BasicCrudResponseBodyWithAcceptance<ERDIdentifier>
   fundep: BasicCrudResponseBodyWithValidation<FunDepIdentifier>
