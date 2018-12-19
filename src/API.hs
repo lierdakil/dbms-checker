@@ -26,7 +26,8 @@ type CustomTopicsAPI =
 type UsersAPI =
   QueryParam "group" Text :> Get '[JSON] [UserInfo] :<|>
   Capture "userId" UserIdentifier :> (
-       "topic" :> (
+       Get '[JSON] UserInfo
+  :<|> "topic" :> (
               Get '[JSON] (Maybe AssignedTopicInfo)
          :<|> ReqBody '[JSON] AssignedTopic :> Put '[JSON] AssignedTopicInfo
          )

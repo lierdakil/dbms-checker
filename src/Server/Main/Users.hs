@@ -24,7 +24,8 @@ import Data.ByteString.Lazy (fromStrict)
 users :: ServerT UsersAPI SessionEnv
 users = getUsers
    :<|> \userId ->
-        (getUsersTopic userId
+        getUserInfo userId
+   :<|> (getUsersTopic userId
    :<|> patchUsersTopic userId)
    :<|> getUsersErd userId
    :<|> getUsersFundep userId
@@ -43,6 +44,14 @@ getUsers (Just grp) = bracketDB $ do
   let group = Group grp
   (users' :: [User]) <- fromRelation =<< execDB [tutdrel|User where group = $group |]
   return $ toResponseBody users'
+
+getUserInfo :: UserIdentifier -> SessionEnv UserInfo
+getUserInfo userId = do
+  role <- asks (userSessionUserRole . sessionData)
+  when (role/=Teacher) $ throwError err403
+  (users' :: [User]) <- bracketDB $ fromRelation =<< execDB [tutdrel|User where id = $userId|]
+  when (null users') $ throwError err404
+  return $ toResponseBody $ head users'
 
 getUsersTopic :: UserIdentifier -> SessionEnv (Maybe AssignedTopicInfo)
 getUsersTopic = bracketDB . getUsersTopicInternal
