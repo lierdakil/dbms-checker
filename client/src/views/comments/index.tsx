@@ -4,14 +4,15 @@ import { Media } from 'react-bootstrap'
 import { Spinner } from '../spinner'
 import { CommentComp } from './comment'
 import { CommentForm } from './comment-form'
+import { RouteComponentProps } from 'react-router'
 
 interface State {
   comments: CommentInfo[]
   initialized: boolean
 }
 
-interface Props {
-  parentItem: ParentItemIdentifier
+interface Props extends Partial<RouteComponentProps> {
+  parentItem?: ParentItemIdentifier
 }
 
 export class CommentBox extends React.Component<Props, State> {
@@ -33,14 +34,17 @@ export class CommentBox extends React.Component<Props, State> {
             <CommentComp comment={c} level={0} />
           </Media.ListItem>
         ))}
-        <Media.ListItem>
-          <CommentForm handleSubmit={this.handleSubmit} />
-        </Media.ListItem>
+        {this.props.parentItem ? (
+          <Media.ListItem>
+            <CommentForm handleSubmit={this.handleSubmit} />
+          </Media.ListItem>
+        ) : null}
       </Media.List>
     )
   }
 
   private handleSubmit = async (text: string, prio: CommentPriority) => {
+    if (!this.props.parentItem) throw new Error('Can not add new comments here')
     if (!text) return
     const newComment = await api.postComment({
       commentPrio: prio,

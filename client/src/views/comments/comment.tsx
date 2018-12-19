@@ -30,7 +30,7 @@ export class CommentComp extends React.Component<Props, State> {
   }
 
   public render() {
-    const session = api.getUserSessionOrLogin()
+    const session = api.getUserSessionOrThrow()
     return (
       <Media>
         {this.props.level > 0 && this.props.level < 5 ? (

@@ -1,22 +1,23 @@
 const baseURL = 'http://localhost:8081'
 let userSession: UserSessionData | undefined
 
-export function getUserSessionOrLogin() {
+export function getUserSessionOrThrow() {
+  const session = getUserSession()
+  if (session === undefined) throw new Error('No user session')
+  return session
+}
+
+export function getUserSession() {
   if (userSession) return userSession
   const json = localStorage.getItem('session')
   if (json !== null) userSession = JSON.parse(json)
-  if (userSession === undefined) {
-    location.href = '/login'
-    throw new Error('No user session')
-  }
   return userSession
 }
 
-function getUserSession() {
-  if (userSession) return userSession
-  const json = localStorage.getItem('session')
-  if (json !== null) userSession = JSON.parse(json)
-  return userSession
+export function clearUserSession() {
+  userSession = undefined
+  localStorage.removeItem('session')
+  location.href = '/login'
 }
 
 export async function login(authData: IAuthData): Promise<void> {
@@ -53,7 +54,7 @@ export async function getUserItem<T extends keyof UserItems>(
   userId?: string,
 ): Promise<UserItems[T] | null> {
   if (userId === undefined) {
-    const session = getUserSessionOrLogin()
+    const session = getUserSessionOrThrow()
     userId = session.userSessionUserInfo.userInfoUserId
   }
   return request(`/users/${userId}/${item}`, 'GET')
@@ -64,7 +65,7 @@ export async function putUserTopic(
   userId?: string,
 ): Promise<AssignedTopicInfo> {
   if (userId === undefined) {
-    const session = getUserSessionOrLogin()
+    const session = getUserSessionOrThrow()
     userId = session.userSessionUserInfo.userInfoUserId
   }
   return request(`/users/${userId}/topic`, 'PUT', topic)
@@ -153,17 +154,15 @@ export async function patchSQLSchema(
 }
 
 export async function getComments(
-  parentItem: ParentItemIdentifier,
+  parentItem?: ParentItemIdentifier,
 ): Promise<CommentInfo[]> {
-  const parentItemSer = `${parentItem.tag} ${parentItem.contents}`
-  return request(
-    `/comments?parentItem=${encodeURIComponent(parentItemSer)}`,
-    'GET',
-  )
-}
-
-export async function getAllComments(): Promise<CommentInfo[]> {
-  return request(`/comments`, 'GET')
+  if (parentItem) {
+    const parentItemSer = `${parentItem.tag} ${parentItem.contents}`
+    return request(
+      `/comments?parentItem=${encodeURIComponent(parentItemSer)}`,
+      'GET',
+    )
+  } else return request(`/comments`, 'GET')
 }
 
 export async function postComment(body: CommentBodyInfo): Promise<CommentInfo> {

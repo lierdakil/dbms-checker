@@ -7,6 +7,7 @@ import {
   Switch,
   RouteProps,
   RouteComponentProps,
+  Redirect,
 } from 'react-router-dom'
 import { Grid, Row, Col, Button, Glyphicon } from 'react-bootstrap'
 import { TaskList } from './task-list'
@@ -18,6 +19,7 @@ import { SqlSchema } from './pages/sqlschema'
 import { ErrorComponent } from './error-component'
 import { StudentList } from './teacher/student-list'
 import { StudentDetail } from './teacher/student-detail'
+import { CommentBox } from './comments'
 
 export interface State {
   leftPanel: boolean
@@ -29,6 +31,7 @@ interface LayoutProps extends RouteProps {
 
 const DefaultLayout: React.Factory<LayoutProps> = (props) => {
   const { component: Component, ...rest } = props!
+  const sess = api.getUserSession()
   return (
     <Route
       {...rest}
@@ -38,6 +41,11 @@ const DefaultLayout: React.Factory<LayoutProps> = (props) => {
             <Button onClick={toTop}>
               <Glyphicon glyph="home" />
             </Button>
+            {sess ? (
+              <Button onClick={logOut}>
+                <Glyphicon glyph="log-out" />
+              </Button>
+            ) : null}
           </Row>
           <Component {...matchProps} />
         </>
@@ -116,6 +124,7 @@ const TeacherInterface: React.Factory<{}> = () => {
       <MainLayout path="/" exact component={StudentList} />
       <MainLayout path="/group/:groupId" component={StudentList} />
       <MainLayout path="/user/:userId" component={StudentDetail} />
+      <MainLayout path="/all-comments" component={CommentBox} />
     </>
   )
 }
@@ -124,18 +133,26 @@ const toTop = () => {
   location.href = '/'
 }
 
+const logOut = () => {
+  api.clearUserSession()
+}
+
 export const Main = () => {
-  const session = api.getUserSessionOrLogin()
+  const session = api.getUserSession()
   return (
     <Grid>
       <ErrorComponent>
         <Router>
           <Switch>
             <LoginLayout path="/login" component={Login} />
-            {session.userSessionUserInfo.userInfoUserRole === 'Teacher' ? (
-              <TeacherInterface />
+            {session ? (
+              session.userSessionUserInfo.userInfoUserRole === 'Teacher' ? (
+                <TeacherInterface />
+              ) : (
+                <StudentInterface />
+              )
             ) : (
-              <StudentInterface />
+              <Redirect to="/login" />
             )}
           </Switch>
         </Router>

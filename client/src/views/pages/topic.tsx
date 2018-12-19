@@ -10,7 +10,7 @@ export const Topic: React.Factory<any> = () => {
       <CommentBox
         parentItem={{
           tag: 'ParentTopicSelection',
-          contents: api.getUserSessionOrLogin().userSessionUserInfo
+          contents: api.getUserSessionOrThrow().userSessionUserInfo
             .userInfoUserId,
         }}
       />
