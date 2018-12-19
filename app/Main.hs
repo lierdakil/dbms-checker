@@ -12,11 +12,16 @@ import System.Environment
 
 import System.IO.Error
 
+import ProjectM36.Client
+
 main :: IO ()
 main = do
   env <- getEnvironment
+  let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []
+  conn <- either (error . show) id <$> connectProjectM36 connInfo
   let cfg = Config {
     configPort       = maybe 8081 read $ lookup "DBMS_CHECKER_PORT" env
+  , configDBConn     = conn
   , configOrigins    = words <$> lookup "DBMS_CHECKER_ORIGINS" env
   , configSessionDur = nominalDay * fromIntegral (maybe (7 :: Word) read (lookup "DBMS_SESSION_EXPIRATION_DAYS" env))
   }

@@ -11,6 +11,7 @@
 module DB.Accessor (module DB.Accessor, toAtom) where
 
 import Servant
+import Config
 import ProjectM36.Client
 import ProjectM36.Base
 import ProjectM36.Tupleable
@@ -60,7 +61,7 @@ rollbackDB = do
   handle =<< liftIO (rollback sid conn)
   setDirty False
 
-bracketDB :: (MonadMask m, MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m a -> m a
+bracketDB :: (HasConfig m, MonadMask m, MonadBaseControl IO m, MonadIO m, MonadError ServantErr m) => DBContextT m a -> m a
 bracketDB ma = bracket getConn freeConn $ flip evalStateT False . runReaderT (runDBContextT action)
   where
     action = do
@@ -69,13 +70,11 @@ bracketDB ma = bracket getConn freeConn $ flip evalStateT False . runReaderT (ru
       when isDirty commitDB
       return x
     getConn = do
-      let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []
-      conn <- handle =<< liftIO (connectProjectM36 connInfo)
+      conn <- getConfigParam configDBConn
       sess <- handle =<< liftIO (createSessionAtHead conn "master")
       return (conn, sess)
-    freeConn (conn, sess) = liftIO $ do
+    freeConn (conn, sess) = liftIO $
       closeSession sess conn
-      close conn
 
 class ExecDB a where
   type family ExecDBResultType a

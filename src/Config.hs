@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE KindSignatures #-}
 
 module Config (
     asks
@@ -9,6 +10,7 @@ module Config (
   , SessionEnv(..)
   , Config(..)
   , Session(..)
+  , HasConfig(..)
   , ntEnv
   , ntSessionEnv
   ) where
@@ -20,6 +22,7 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Servant
 import Data.Time
+import ProjectM36.Client (Connection)
 
 import API.Types
 
@@ -40,8 +43,18 @@ data Session = Session {
   , sessionData :: !UserSessionData
   }
 
+class HasConfig (m :: * -> *) where
+  getConfigParam :: (Config -> a) -> m a
+
+instance HasConfig Env where
+  getConfigParam = asks
+
+instance HasConfig SessionEnv where
+  getConfigParam f = asks (f . sessionConfig)
+
 data Config = Config {
     configPort       :: !Int
+  , configDBConn     :: !Connection
   , configOrigins    :: !(Maybe [String])
   , configSessionDur :: !NominalDiffTime
   }
