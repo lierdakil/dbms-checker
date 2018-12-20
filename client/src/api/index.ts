@@ -1,4 +1,4 @@
-const baseURL = 'http://localhost:8081'
+const baseURL = ''
 let userSession: UserSessionData | undefined
 
 export function getUserSessionOrThrow() {
