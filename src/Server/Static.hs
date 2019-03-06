@@ -12,10 +12,10 @@ import Network.Wai.Application.Static
 import WaiAppStatic.Types
 
 
-staticServer :: Server Raw
-staticServer = serveDirectoryWith settings
+staticServer :: FilePath -> Server Raw
+staticServer dataDir = serveDirectoryWith settings
   where
-  settings = let orig = defaultWebAppSettings "client/dist" in orig {
+  settings = let orig = defaultWebAppSettings dataDir in orig {
       ssLookupFile = lookupFile (ssLookupFile orig)
     }
   lookupFile orig xs

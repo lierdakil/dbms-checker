@@ -73,30 +73,29 @@ executables:
     source-dirs:         app
     ghc-options:
     - -threaded
-    - -dynamic
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - dbms-checker
     - warp
+    - filepath
 
   create-user:
     main:                Main.hs
     source-dirs:         create-user
     ghc-options:
     - -threaded
-    - -dynamic
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - dbms-checker
+    - filepath
 
   client-api-generator:
     main:                Main.hs
     source-dirs:         client-api-generator
     ghc-options:
     - -threaded
-    - -dynamic
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
@@ -109,12 +108,12 @@ executables:
     source-dirs:         create-db-schema
     ghc-options:
     - -threaded
-    - -dynamic
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - dbms-checker
     - template-haskell
+    - filepath
 
 tests:
   dbms-checker-test:

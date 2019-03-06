@@ -22,6 +22,7 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Servant
 import Data.Time
+import qualified Data.ByteString as B
 import ProjectM36.Client (Connection)
 
 import API.Types
@@ -55,8 +56,9 @@ instance HasConfig SessionEnv where
 data Config = Config {
     configPort       :: !Int
   , configDBConn     :: !Connection
-  , configOrigins    :: !(Maybe [String])
+  , configOrigins    :: !(Maybe [B.ByteString])
   , configSessionDur :: !NominalDiffTime
+  , configFrontendDir :: !FilePath
   }
 
 ntEnv :: Config -> Env a -> Servant.Handler a

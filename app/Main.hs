@@ -9,6 +9,10 @@ import Servant.Auth.Server
 import Servant.Auth.Server.SetCookieOrphan ()
 import Data.Time
 import System.Environment
+import System.FilePath
+import Data.Maybe
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 
 import System.IO.Error
 
@@ -17,15 +21,17 @@ import ProjectM36.Client
 main :: IO ()
 main = do
   env <- getEnvironment
-  let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []
+  let dataDir = fromMaybe "data" $ lookup "DBMS_CHECKER_DATA_DIR" env
+      connInfo = InProcessConnectionInfo (CrashSafePersistence $ dataDir </> "database") emptyNotificationCallback []
   conn <- either (error . show) id <$> connectProjectM36 connInfo
   let cfg = Config {
     configPort       = maybe 8081 read $ lookup "DBMS_CHECKER_PORT" env
   , configDBConn     = conn
-  , configOrigins    = words <$> lookup "DBMS_CHECKER_ORIGINS" env
+  , configOrigins    = map C.pack . words <$> lookup "DBMS_CHECKER_ORIGINS" env
   , configSessionDur = nominalDay * fromIntegral (maybe (7 :: Word) read (lookup "DBMS_SESSION_EXPIRATION_DAYS" env))
+  , configFrontendDir = fromMaybe "client/dist" $ lookup "DBMS_CHECKER_FRONTEND_DIR" env
   }
-  let keyPath = "data/jwtKey.json"
+  let keyPath = dataDir </> "jwtKey.json"
       handleErr err = do
         print err
         print ("Trying to create JWT key file..." :: String)

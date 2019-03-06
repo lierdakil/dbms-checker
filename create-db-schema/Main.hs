@@ -18,10 +18,15 @@ import DB.Types
 import Data.Time
 import Data.ByteString (ByteString)
 import TutorialD.QQ
+import System.Environment
+import System.FilePath
+import Data.Maybe
 
 main :: IO ()
 main = do
-  let connInfo = InProcessConnectionInfo (CrashSafePersistence "data/database") emptyNotificationCallback []
+  env <- getEnvironment
+  let dataDir = fromMaybe "data" $ lookup "DBMS_CHECKER_DATA_DIR" env
+      connInfo = InProcessConnectionInfo (CrashSafePersistence $ dataDir </> "database") emptyNotificationCallback []
       eCheck v = do
         x <- v
         case x of
@@ -36,20 +41,6 @@ main = do
       $(foldr (\x acc -> [|toAddTypeExpr $(makeProxy x) : $acc|]) [|[]|] domains) ++
       $(foldr (\x acc -> [|toDefineExpr $(makeProxy x) (T.pack $ nameBase x) : $acc|]) [|[]|] DB.TypeLists.relations) ++
       []
-
-  time <- getCurrentTime
-  Just uuid <- nextUUID
-  pwd <- hashPassword 12 ("password" :: ByteString)
-  let user = User {
-        DB.Types.id = UserIdentifier uuid
-      , username = "test"
-      , email = "test@livid.pp.ru"
-      , group = NoGroup
-      , saltedPasswordHash = pwd
-      , registrationDate = time
-      , role = Teacher
-    }
-  eCheck $ executeDatabaseContextExpr sessionId conn [tutdctx|insert User $user|]
 
   let topics = [
           "Автопрокат"

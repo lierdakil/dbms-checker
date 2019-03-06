@@ -28,6 +28,16 @@ allow-newer: true
 flags:
   project-m36:
     build-examples: false
-
-ghc-options:
-  $targets: -Wall -optl-fuse-ld=bfd -j
+image:
+  containers:
+    -
+      base: "dbms-checker-base:latest"
+      name: "dbms-checker"
+      add:
+        "client/dist/": "/usr/local/share/dbms-checker-client/"
+      executables:
+      - create-db-schema
+      - create-user
+      - dbms-checker-server
+docker:
+  enable: true

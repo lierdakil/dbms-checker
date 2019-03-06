@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 
 module Lib where
 
@@ -27,5 +27,5 @@ app jwtKey cfg = logStdoutDev
   corspolicy = simpleCorsResourcePolicy
            { corsRequestHeaders = [ "content-type" ]
            , corsMethods = map renderStdMethod [GET, PUT, POST, PATCH, DELETE, OPTIONS]
-           , corsOrigins = Nothing -- TODO: Fix this
+           , corsOrigins = (, True) <$> configOrigins cfg
            }

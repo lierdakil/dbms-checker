@@ -22,7 +22,7 @@ server :: JWTSettings -> Config -> Server API
 server jwt cfg = authServer cfg
     :<|> hoistServerWithContext loginApi context (ntEnv cfg) (loginServer jwt)
     :<|> swaggerSchemaUIServer swaggerDoc
-    :<|> staticServer
+    :<|> staticServer (configFrontendDir cfg)
 
 context :: Proxy '[CookieSettings, JWTSettings]
 context = Proxy

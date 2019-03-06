@@ -8,4 +8,4 @@ dist:
 	rm -r dist/ || echo
 	npm install
 	npm install --only=dev
-	npm run gulp
+	npm run build
